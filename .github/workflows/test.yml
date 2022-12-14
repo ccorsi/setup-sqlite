@@ -24,7 +24,7 @@ jobs:
       with:
         node-version: 16.x
         cache: 'npm'
-    - run: npm ci
+    # - run: npm ci
     - name: Setup SQLite
       uses: ./ # ccorsi/setup-sqlite@v1
       with:

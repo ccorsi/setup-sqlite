@@ -2,7 +2,7 @@
   "name": "setup-sqlite",
   "version": "1.0.0",
   "description": "Setup Action for the sqlite distribution",
-  "main": "main.js",
+  "main": "dist/main.js",
   "scripts": {
     "lint": "eslint",
     "prepare": "ncc build src/main.js -o dist",
