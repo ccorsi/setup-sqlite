@@ -27,9 +27,10 @@ jobs:
     - run: npm ci
     - run: npm run prepare
     - name: Setup SQLite
-      uses: ./ # ccorsi/setup-sqlite@v1
+      # use local distribution until we release an official version
+      #   ccorsi/setup-sqlite@v1
+      uses: ./
       with:
         sqlite-version: 3.40.0
         sqlite-year: 2022
-    - run: printenv
     - run: sqlite3 --version
