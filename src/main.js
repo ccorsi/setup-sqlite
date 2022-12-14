@@ -43,7 +43,7 @@ module.exports.run = async function run() {
         // Cleanup anything that is not supposed to be around when completed installing the
         // requested version of sqlite or remove all files that where not cleaned up because of
         // errors during installation of requested version of sqlite
-        cleanup()
+        await cleanup()
         core.debug('completed execution of sqlite setup action')
     }
 }
