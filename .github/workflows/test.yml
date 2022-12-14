@@ -16,7 +16,7 @@ jobs:
         runs-on: [ ubuntu-latest, windows-latest, macos-latest ]
       fail-fast: false
 
-    runs-on: ${{ matrix.runs-on }} # ubuntu-latest
+    runs-on: ${{ matrix.runs-on }}
 
     steps:
     - uses: actions/checkout@v3
@@ -29,10 +29,10 @@ jobs:
 
     strategy:
       matrix:
-        runs-on: [ ubuntu-latest, windows-latest ]
+        runs-on: [ ubuntu-latest, windows-latest, macos-latest ]
       fail-fast: false
 
-    runs-on: ${{ matrix.runs-on }} # ubuntu-latest
+    runs-on: ${{ matrix.runs-on }}
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-node@v3
