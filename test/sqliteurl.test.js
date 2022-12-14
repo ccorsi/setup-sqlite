@@ -1,9 +1,9 @@
 const { create_sqlite_url, formatVersion } = require("../src/setup")
 
 const platforms = {
-    'win32': "win32",
-    'linux': 'linux',
-    'darwin': 'oxs'
+    'win32':  'win32',
+    'linux':  'linux',
+    'darwin': 'osx'
 }
 
 const inputs = [
