@@ -22,7 +22,7 @@ inputs:
 #     description: 'The installed sqlite version'
 runs:
   using: 'node16' # can this be node18
-  main: 'src/main.js' # installs the requested sqlite version
+  main: 'dist/main.js' # installs the requested sqlite version
   # TODO: Can the cleanup process happen within the main call instead?
   # post: 'src/cache.js' # updates the cache for the installed sqlite version
   # post-if: success() # only execute post command if successfully installed requested sqlite version
