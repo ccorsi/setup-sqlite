@@ -9,7 +9,15 @@ on:
 jobs:
   # unit tests
   units:
-    runs-on: ubuntu-latest
+    name: Unit Tests
+
+    strategy:
+      matrix:
+        runs-on: [ ubuntu-latest, windows-latest ]
+      fail-fast: false
+
+    runs-on: ${{ matrix.runs-on }} # ubuntu-latest
+
     steps:
     - uses: actions/checkout@v3
     - run: npm ci
