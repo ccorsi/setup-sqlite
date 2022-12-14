@@ -239,10 +239,14 @@ module.exports.setup_sqlite = async function setup_sqlite(version, year, url_pre
 
         if (process.platform == 'win32') {
             sqliteExtractedFolder = await extractZip(targetName)
-        } else if (process.platform == 'darwin') {
-            sqliteExtractedFolder = await extractXar(targetName)
+        // } else if (process.platform == 'darwin') {
+        //     sqliteExtractedFolder = await extractXar(targetName)
         } else {
-            sqliteExtractedFolder = await extractTar(targetName)
+            sqliteExtractedFolder = await extractTar(targetName, undefined, [
+                'xz',
+                '--strip',
+                '1'
+            ])
         }
 
         core.debug(`Extracted sqlite version ${version} to ${sqliteExtractedFolder}`)
