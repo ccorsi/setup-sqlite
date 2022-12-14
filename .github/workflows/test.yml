@@ -31,4 +31,5 @@ jobs:
       with:
         sqlite-version: 3.40.0
         sqlite-year: 2000
-      run: sqlite3 --version
+    - run: printenv PATH
+    - run: sqlite3 --version
