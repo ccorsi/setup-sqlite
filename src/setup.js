@@ -24,7 +24,7 @@
 
 const core = require('@actions/core');
 const hc = require('@actions/http-client');
-const { downloadTool, extractZip, cacheDir, find, extract7z } = require('@actions/tool-cache');
+const { downloadTool, extractZip, cacheDir, find, extract7z, extractXar, extractTar } = require('@actions/tool-cache');
 const { CodeGenerator } = require('@babel/generator');
 const { toComputedKey } = require('@babel/types');
 const { writeFile, rm, open, rmdir, readdir, stat } = require('fs/promises');
@@ -239,8 +239,10 @@ module.exports.setup_sqlite = async function setup_sqlite(version, year, url_pre
 
         if (process.platform == 'win32') {
             sqliteExtractedFolder = await extractZip(targetName)
+        } else if (process.platform == 'darwin') {
+            sqliteExtractedFolder = await extractXar(targetName)
         } else {
-            sqliteExtractedFolder = await extract7z(targetName)
+            sqliteExtractedFolder = await extractTar(targetName)
         }
 
         core.debug(`Extracted sqlite version ${version} to ${sqliteExtractedFolder}`)
