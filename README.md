@@ -1,8 +1,8 @@
 # setup-node
 
-[![build-test](https://github.com/actions/setup-sqlite/actions/workflows/build-test.yml/badge.svg)](https://github.com/actions/setup-sqlite/actions/workflows/build-test.yml)
-[![versions](https://github.com/actions/setup-sqlite/actions/workflows/versions.yml/badge.svg)](https://github.com/actions/setup-sqlite/actions/workflows/versions.yml)
-[![proxy](https://github.com/actions/setup-sqlite/actions/workflows/proxy.yml/badge.svg)](https://github.com/actions/setup-sqlite/actions/workflows/proxy.yml)
+[![build-test](https://github.com/actions/setup-sqlite/actions/workflows/test.yml/badge.svg)](https://github.com/actions/setup-sqlite/actions/workflows/test.yml)
+<!-- [![versions](https://github.com/actions/setup-sqlite/actions/workflows/versions.yml/badge.svg)](https://github.com/actions/setup-sqlite/actions/workflows/versions.yml)
+[![proxy](https://github.com/actions/setup-sqlite/actions/workflows/proxy.yml/badge.svg)](https://github.com/actions/setup-sqlite/actions/workflows/proxy.yml) -->
 
 This action provides the following functionality for GitHub Actions users:
 
