@@ -13,7 +13,7 @@ jobs:
 
     strategy:
       matrix:
-        runs-on: [ ubuntu-latest, windows-latest ]
+        runs-on: [ ubuntu-latest, windows-latest, macos-latest ]
       fail-fast: false
 
     runs-on: ${{ matrix.runs-on }} # ubuntu-latest
@@ -25,7 +25,14 @@ jobs:
 
   # test action works running from the graph
   test:
-    runs-on: ubuntu-latest
+    name: Setup Test
+
+    strategy:
+      matrix:
+        runs-on: [ ubuntu-latest, windows-latest ]
+      fail-fast: false
+
+    runs-on: ${{ matrix.runs-on }} # ubuntu-latest
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-node@v3
