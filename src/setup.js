@@ -28,10 +28,13 @@ const { downloadTool, extractZip, cacheDir, find, extract7z, extractXar, extract
 const { CodeGenerator } = require('@babel/generator');
 const { toComputedKey } = require('@babel/types');
 const { accessSync, constants } = require('fs');
-const { writeFile, rm, open, rmdir, readdir, stat } = require('fs/promises');
-const { sep } = require('path');
+const { writeFile, rm, open, rmdir, readdir, stat, mkdir } = require('fs/promises');
+// const path = require('path');
+const { sep, join } = require('path');
 const { connected } = require('process');
 const { text } = require('stream/consumers');
+const { isObject } = require('util');
+const { v4: uuidv4 } = require('uuid')
 
 /**
  * This method is passed a version in string format that will then be converted into
@@ -221,6 +224,12 @@ module.exports.setup_sqlite = async function setup_sqlite(version, year, url_pre
             })
         })
 
+        const dest = join(_getTemporaryDir(), uuidv4())
+
+        await mkdir(dest, { recursive: true })
+
+        targetName = join(dest, targetName)
+
         // Store data into the targeted file
         await writeFile(targetName, body)
 
@@ -264,6 +273,14 @@ module.exports.setup_sqlite = async function setup_sqlite(version, year, url_pre
         // re-throw the caught error
         throw err
     }
+}
+
+function _getTemporaryDir() {
+    const tempDir = process.env['RUNNER_TEMP'] || ''
+    if (tempDir.length == 0) {
+        throw new Error('Expected RUNNER_TEMP to be defined')
+    }
+    return tempDir
 }
 
 let cleanup_fcns = new Set()
