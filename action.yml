@@ -1,0 +1,28 @@
+name: 'Setup Sqlite environment'
+description: 'This action will setup the sqlite distribution'
+author: 'Claudio Corsi'
+inputs:
+  sqlite-version:  # id of input
+    description: 'The version of sqlite that you want to install, example, 3.40.0'
+    required: false
+    default: '3.40.0'
+  sqlite-year: # id of input
+    description: 'The year that the sqlite version was released, example, 2022'
+    required: false
+    default: '2022'
+  sqlite-url-path:
+    description: 'The url prefix to the sqlite download site without the year and version information, for example, https://www.sqlite.org/'
+    required: false
+    default: 'https://www.sqlite.org/'
+# TODO: Do we really need this extra detail?
+# outputs:
+#   cache-hit:
+#     description: 'A boolean value to indicate if a cache was hit'
+#   sqlite-version:
+#     description: 'The installed sqlite version'
+runs:
+  using: 'node16' # can this be node18
+  main: 'src/main.js' # installs the requested sqlite version
+  # TODO: Can the cleanup process happen within the main call instead?
+  # post: 'src/cache.js' # updates the cache for the installed sqlite version
+  # post-if: success() # only execute post command if successfully installed requested sqlite version

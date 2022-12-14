@@ -1,0 +1,2 @@
+# We don't want to include this since it is generated using the npm install command
+node_modules
