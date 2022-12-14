@@ -6,7 +6,7 @@
 
 This action provides the following functionality for GitHub Actions users:
 
-- Optionally downloading and caching distribution of the requested sqlite version, and adding it to the PATH
+- Downloading and caching the distribution of the requested sqlite version, and adding it to the PATH
 
 ## Usage
 
