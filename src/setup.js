@@ -27,6 +27,7 @@ const hc = require('@actions/http-client');
 const { downloadTool, extractZip, cacheDir, find, extract7z, extractXar, extractTar } = require('@actions/tool-cache');
 const { CodeGenerator } = require('@babel/generator');
 const { toComputedKey } = require('@babel/types');
+const { accessSync, constants } = require('fs');
 const { writeFile, rm, open, rmdir, readdir, stat } = require('fs/promises');
 const { sep } = require('path');
 const { connected } = require('process');
@@ -234,20 +235,12 @@ module.exports.setup_sqlite = async function setup_sqlite(version, year, url_pre
             core.debug(`Deleted target file ${targetName}`)
         })
 
-        // unzip the files to a local host directory and add the path
-        let sqliteExtractedFolder
+        core.info(`extracting zip file: ${targetName}`)
 
-        if (process.platform == 'win32') {
-            sqliteExtractedFolder = await extractZip(targetName)
-        // } else if (process.platform == 'darwin') {
-        //     sqliteExtractedFolder = await extractXar(targetName)
-        } else {
-            sqliteExtractedFolder = await extractTar(targetName, undefined, [
-                'xz',
-                '--strip',
-                '1'
-            ])
-        }
+        accessSync(targetName)
+
+        // unzip the files to a local host directory and add the path
+        const sqliteExtractedFolder = await extractZip(targetName)
 
         core.debug(`Extracted sqlite version ${version} to ${sqliteExtractedFolder}`)
 
