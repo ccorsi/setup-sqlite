@@ -25,7 +25,7 @@
 const core = require('@actions/core')
 const { setup_sqlite, cleanup } = require('./setup')
 
-module.exports.run = async function run() {
+async function run() {
     try {
         core.debug('executing sqlite setup action')
         let version = core.getInput('sqlite-version')
@@ -47,3 +47,5 @@ module.exports.run = async function run() {
         core.debug('completed execution of sqlite setup action')
     }
 }
+
+await run()

@@ -172,7 +172,6 @@ module.exports.create_sqlite_url = create_sqlite_url
  * @param {string} url_prefix the url to where the version can be downloaded
  */
 module.exports.setup_sqlite = async function setup_sqlite(version, year, url_prefix) {
-    console.log('***************** Inside setup_sqlite *********************')
     let cachePath = find('sqlite', version)
 
     if (cachePath.length > 0) {
