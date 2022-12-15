@@ -24,17 +24,11 @@
 
 const core = require('@actions/core');
 const hc = require('@actions/http-client');
-const { downloadTool, extractZip, cacheDir, find, extract7z, extractXar, extractTar } = require('@actions/tool-cache');
+const { extractZip, cacheDir, find, downloadTool } = require('@actions/tool-cache');
 const { CodeGenerator } = require('@babel/generator');
-const { toComputedKey } = require('@babel/types');
-const { accessSync, constants } = require('fs');
-const { writeFile, rm, open, rmdir, readdir, stat, mkdir } = require('fs/promises');
-// const path = require('path');
-const { sep, join } = require('path');
-const { connected } = require('process');
-const { text } = require('stream/consumers');
-const { isObject } = require('util');
-const { v4: uuidv4 } = require('uuid')
+const { constants } = require('fs');
+const { rm, readdir, stat } = require('fs/promises');
+const { sep } = require('path');
 
 /**
  * This method is passed a version in string format that will then be converted into
@@ -187,6 +181,7 @@ module.exports.setup_sqlite = async function setup_sqlite(version, year, url_pre
     try {
         core.debug(`Installing sqlite version: ${version} from ${url}`)
 
+        /*
         // TODO: This code will be replaced with the tool-cache downloadUrl call
         //      as soon as I understand why it is failing.
         let httpClient = new hc.HttpClient('setup-sqlite', [], {
@@ -232,10 +227,9 @@ module.exports.setup_sqlite = async function setup_sqlite(version, year, url_pre
 
         // Store data into the targeted file
         await writeFile(targetName, body)
+        */
 
-        // TODO: Why doesn't this command work!!!
-        // download the requested sqlite version
-        // const targetName = await downloadTool(url)
+        targetName = await downloadTool(url, targetName)
 
         // Add a cleanup callback that will deleted the target file
         add_cleanup(async () => {
@@ -245,8 +239,6 @@ module.exports.setup_sqlite = async function setup_sqlite(version, year, url_pre
         })
 
         core.info(`extracting zip file: ${targetName}`)
-
-        accessSync(targetName)
 
         // unzip the files to a local host directory and add the path
         const sqliteExtractedFolder = await extractZip(targetName)

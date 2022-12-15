@@ -1,25 +1,25 @@
-name: 'Setup Sqlite environment'
-description: 'This action will setup the sqlite distribution'
+name: 'Setup SQLite environment'
+description: 'This action will setup the SQLite distribution'
 author: 'Claudio Corsi'
 inputs:
   sqlite-version:  # id of input
-    description: 'The version of sqlite that you want to install, example, 3.40.0'
+    description: 'The version of SQLite that you want to install, example, 3.40.0'
     required: false
     default: '3.40.0'
   sqlite-year: # id of input
-    description: 'The year that the sqlite version was released, example, 2022'
+    description: 'The year that the SQLite version was released, example, 2022'
     required: false
     default: '2022'
   sqlite-url-path:
-    description: 'The url prefix to the sqlite download site without the year and version information, for example, https://www.sqlite.org/'
+    description: 'The url prefix to the SQLite download site without the year and version information, for example, https://www.sqlite.org/'
     required: false
     default: 'https://www.sqlite.org/'
 # TODO: Do we really need this extra detail?
-# outputs:
+outputs:
 #   cache-hit:
 #     description: 'A boolean value to indicate if a cache was hit'
-#   sqlite-version:
-#     description: 'The installed sqlite version'
+  sqlite-version:
+    description: 'The installed SQLite version'
 runs:
   using: 'node16' # can this be node18
   main: 'dist/index.js' # installs the requested sqlite version

@@ -12,6 +12,14 @@ This action provides the following functionality for GitHub Actions users:
 
 See [action.yml](action.yml)
 
+Here is a table of the different inputs that can be used with this action
+
+| Name | Description | Optional | Default Value |
+| ---- | ----------- | -------- | ------------- |
+| sqlite-version | version of the SQLite to install | false | 3.40.0 |
+| sqlite-year | release year of the SQLite to install | false | 2022 |
+| sqlite-url-path | the SQLite download site | true | https://www.sqlite.org/ |
+
 **Basic:**
 
 ```yaml
@@ -34,10 +42,12 @@ The `sqlite-version` input uses the same versioning format that the sqlite team 
 
 Examples:
 
- - version 3.40.0 released during 2022
- - version 3.35.0 released during 2021
- - version 3.34.0 released during 2020
- - version 3.30.1 released during 2019
+| sqlite-version | sqlite-year |
+| -------------- | ----------- |
+| 3.40.0 | 2022 |
+| 3.35.0 | 2021 |
+| 3.34.0 | 2020 |
+| 3.30.1 | 2019 |
 
 While the above versions are currently accessible, not all of the older versions are available.
 
