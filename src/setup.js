@@ -181,54 +181,6 @@ module.exports.setup_sqlite = async function setup_sqlite(version, year, url_pre
     try {
         core.debug(`Installing sqlite version: ${version} from ${url}`)
 
-        /*
-        // TODO: This code will be replaced with the tool-cache downloadUrl call
-        //      as soon as I understand why it is failing.
-        let httpClient = new hc.HttpClient('setup-sqlite', [], {
-            allowRetries: true,
-            maxRetries: 3
-        })
-
-        // connect to the given url to retreive the requested version of sqlite
-        let response = await httpClient.get(url)
-
-        if (response.message.statusCode != 200) {
-            // unable to retreive the sqlite file from the requested sqlite version
-            throw new Error(`Unable to download sqlite version ${version} from ${url}`)
-        }
-
-        let body = await new Promise((resolve, reject) => {
-            // TODO: replace this with the use of a file handler so that the buffer
-            //       will not be limited to the memory available to the process.
-
-            // create a buffer to store the file data that will be save to a file
-            let fileData = Buffer.alloc(0)
-
-            response.message.on('data', (chunk) => {
-                fileData = Buffer.concat([fileData, chunk])
-            })
-
-            response.message.on('error', (err) => {
-                // consume the remaining message before rejecting this promise
-                response.message.resume()
-                reject(err)
-            })
-
-            response.message.on('end', () => {
-                resolve(fileData)
-            })
-        })
-
-        const dest = join(_getTemporaryDir(), uuidv4())
-
-        await mkdir(dest, { recursive: true })
-
-        targetName = join(dest, targetName)
-
-        // Store data into the targeted file
-        await writeFile(targetName, body)
-        */
-
         if (process.platform == 'win32') {
             targetName = await downloadTool(url, targetName)
         } else {
@@ -269,14 +221,6 @@ module.exports.setup_sqlite = async function setup_sqlite(version, year, url_pre
         // re-throw the caught error
         throw err
     }
-}
-
-function _getTemporaryDir() {
-    const tempDir = process.env['RUNNER_TEMP'] || ''
-    if (tempDir.length == 0) {
-        throw new Error('Expected RUNNER_TEMP to be defined')
-    }
-    return tempDir
 }
 
 let cleanup_fcns = new Set()
