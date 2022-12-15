@@ -229,7 +229,11 @@ module.exports.setup_sqlite = async function setup_sqlite(version, year, url_pre
         await writeFile(targetName, body)
         */
 
-        targetName = await downloadTool(url, targetName)
+        if (process.platform == 'win32') {
+            targetName = await downloadTool(url, targetName)
+        } else {
+            targetName = await downloadTool(url)
+        }
 
         // Add a cleanup callback that will deleted the target file
         add_cleanup(async () => {

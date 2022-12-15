@@ -30,8 +30,8 @@ const distributions = {
 			/*'3.16.1',*/ '3.16.0' ]
 }
 
-// Set test limit to 10 seconds
-jest.setTimeout(10000)
+// Set test limit to 30 seconds
+jest.setTimeout(30000)
 
 const cachePath = path.join(__dirname, 'CACHE')
 const tempPath =  path.join(__dirname, 'TEMP')
