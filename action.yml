@@ -5,11 +5,9 @@ inputs:
   sqlite-version:  # id of input
     description: 'The version of SQLite that you want to install, example, 3.40.0'
     required: false
-    default: '3.40.0'
   sqlite-year: # id of input
     description: 'The year that the SQLite version was released, example, 2022'
     required: false
-    default: '2022'
   sqlite-url-path:
     description: 'The url prefix to the SQLite download site without the year and version information, for example, https://www.sqlite.org/'
     required: false
