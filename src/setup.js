@@ -25,8 +25,6 @@
 const core = require('@actions/core');
 const hc = require('@actions/http-client');
 const { extractZip, cacheDir, find, downloadTool } = require('@actions/tool-cache');
-const { CodeGenerator } = require('@babel/generator');
-const { constants } = require('fs');
 const { rm, readdir, stat } = require('fs/promises');
 const { sep } = require('path');
 
@@ -117,11 +115,152 @@ function create_target_filename(version) {
             return `sqlite-tools-osx-x86-${version}.zip`
         // unsupported versions
         default:
-            throw new Error(`The operating system: ${platform()} sqlite setup is not supported by this action`)
+            throw new Error(`The operating system: ${process.platform} sqlite setup is not supported by this action`)
     }
 }
 
 module.exports.create_target_filename = create_target_filename
+
+/**
+ * This method will determine the latest version of the SQLite distribution
+ * using the tags information on the SQLite GitHub repository.  It will
+ *
+ * @param {string} version The version of sqlite download
+ * @param {string} year The year that the sql distribution was released
+ */
+async function getSQLiteVersionInfo(version, year) {
+    // check if the version information was set
+    if (version != undefined && version != '') {
+        // create the version specific url
+        const tag = `https://api.github.com/repos/sqlite/sqlite/git/ref/tags/version-${version}`
+
+        // Create a client connection
+        const client = new hc.HttpClient(`github-sqlite-tag-${version}`)
+
+        // retrieve a list of tags
+        let res = await client.get(tag)
+
+        // check if the request was successful
+        if (res.message.statusCode != 200) {
+            core.debug(`The request ${tag} failed with status code: ${res.message.statusCode} and status message: ${res.message.statusMessage}`)
+            throw new Error(`Unable to retrieve version information for version ${version}`)
+        }
+
+        // get the returned body
+        let body = await res.readBody()
+
+        // convert body into a json object
+        const jsonTag = JSON.parse(body)
+
+        // extract the commit url
+        let commitUrl = jsonTag["object"]["url"]
+
+        // retrieve information for the commit url
+        res = await client.get(commitUrl)
+
+        // check to see that the get was successful
+        if (res.message.statusCode != 200) {
+            core.debug(`The commit url: ${commitUrl} request failed with status code: ${res.message.statusCode}`)
+            throw new Error(`Unable to get version information SQLite version ${version}`)
+        }
+
+        // extract body
+        body = await res.readBody()
+
+        // convert into json object
+        const jsonCommit = JSON.parse(body)
+
+        // extract the year information
+        let date = new Date(jsonCommit["committer"]["date"])
+
+        // get associated year for commit
+        year = `${date.getFullYear()}`
+
+        // print some debug information
+        core.debug(`Found version: ${version} for year: ${year}`)
+
+        // return version and year for the latest release of SQLite
+        return [ version, year ]
+    }
+
+    // we know that the version is set to undefined or an empty string....
+    // let us check if the year was defined.
+    if (year != undefined && year != '') {
+        // the year information is only relevant with the version
+        core.warning(`Year was defined but will be ignored since version was not defined.`)
+    }
+
+    // Used to retrieve the latest SQLite version information
+    const tags = 'https://api.github.com/repos/sqlite/sqlite/tags'
+
+    // Create a client connection
+    const client = new hc.HttpClient('github-sqlite-tags')
+
+    let res = await client.get(tags)
+
+    if (res.message.statusCode != 200) {
+        // eat the rest of the input information so that no memory leak will be generated
+        res.message.resume()
+
+        core.debug(`Unable to get tags information `)
+        // Unable to retrieve the tags information from GitHub
+        throw new Error(`Unable to get tags information from GitHub: ${res.message.statusMessage}`)
+    }
+
+    // Get the returned string information
+    let body = await res.readBody()
+
+    // convert the returned string into a json object
+    const jsonTags = JSON.parse(body)
+
+    // insure that the returned array contains at least one element
+    if (jsonTags.length == 0) {
+        throw new Error(`No SQLite tags information available at ${tags}`)
+    }
+
+    // Get the first entry in the list for the verison information
+    let entry = jsonTags.find((entry) => entry["name"].startsWith('version-'))
+
+    // Determine if we've found any entries
+    if (entry == undefined) {
+        throw new Error("No SQLite version information was found")
+    }
+
+    // we've found an entry with a valid tag information, extract data
+    // get the version
+    version   = entry["name"].substring("version-".length)
+
+    // get the commit url to determine year of above version
+    let commitUrl = entry["commit"]["url"]
+
+    // retrieve information for the commit url
+    res = await client.get(commitUrl)
+
+    // check to see that the get was successful
+    if (res.message.statusCode != 200) {
+        core.debug(`Information for commit url: ${commitUrl} was not retrieved`)
+        core.debug(`Returned statusCode: ${res.message.statusCode} with statusMessage: ${res.message.statusMessage}`)
+        throw new Error(`Unable to get version information SQLite version ${version}, status code: ${res.message.statusCode}`)
+    }
+
+    // extract body
+    body = await res.readBody()
+
+    // convert into json object
+    const jsonCommit = JSON.parse(body)
+
+    // extract the year information
+    let date = new Date(jsonCommit["commit"]["committer"]["date"])
+
+    // get associated year for commit
+    year = `${date.getFullYear()}`
+
+    // print some debug information
+    core.debug(`Found version: ${version} for year: ${year}`)
+
+    // return version and year for the latest release of SQLite
+    return [ version, year ]
+}
 
 /**
  * This method will create the url from the passed information that will be used to
@@ -132,9 +271,22 @@ module.exports.create_target_filename = create_target_filename
  * @param {string} version The version of sqlite to download, X.Y.Z[.M]
  * @param {string} year The year that the sqlite distribution was released, YYYY
  * @param {string} url_prefix The url prefix that will be combined with the version and year
- * @returns The url used to download the particular version of sqlite
+ * @returns The version, download url and target file name for request the version of sqlite
  */
-function create_sqlite_url(version, year, url_prefix) {
+async function create_sqlite_url(version, year, url_prefix) {
+    try {
+        if (version == undefined || version == '') {
+            // If the version is an empty string then we retrieve the latest
+            // version that is located on github sqlite repository
+            [ version, year ] = await getSQLiteVersionInfo(version, year)
+        } else if (year == undefined || year == '') {
+            [ version, year ] = await getSQLiteVersionInfo(version, year)
+        }
+    } catch(err) {
+        core.debug(`An error was generated when trying to retrieve SQLite version information with error message: ${err.message}`)
+        throw err
+    }
+
     // Determine if the year was formatted correctly
     if ( ! /^\d{4}$/.test(year) ) {
         throw new Error(`Invalid year: ${year} should be formatted as YYYY`)
@@ -146,7 +298,7 @@ function create_sqlite_url(version, year, url_prefix) {
     // Add an '/' to the end of the url if none exist
     let url = url_prefix.endsWith('/') ? url_prefix : url_prefix + '/'
 
-    return [ `${url}${year}/${target}`, target ]
+    return [ version, `${url}${year}/${target}`, target ]
 }
 
 module.exports.create_sqlite_url = create_sqlite_url
@@ -166,17 +318,23 @@ module.exports.create_sqlite_url = create_sqlite_url
  * @param {string} url_prefix the url to where the version can be downloaded
  */
 module.exports.setup_sqlite = async function setup_sqlite(version, year, url_prefix) {
+    let url, targetName
+
+    // create the required version, url and targetName
+    [ version, url, targetName ] = await create_sqlite_url(version, year, url_prefix)
+
+    // determine if the given version was already cached or not
     let cachePath = find('sqlite', version)
 
     if (cachePath.length > 0) {
         core.debug(`Using cached sqlite version ${version}`)
         await addCachedPath(cachePath);
+        // Set the output entries
+        setOutputs(true, version);
         return // no need to do anything else
     }
 
     core.info(`Installing sqlite version: ${version}`)
-
-    let [ url, targetName ] = create_sqlite_url(version, year, url_prefix)
 
     try {
         core.debug(`Installing sqlite version: ${version} from ${url}`)
@@ -214,6 +372,9 @@ module.exports.setup_sqlite = async function setup_sqlite(version, year, url_pre
         // added to the path.
         await addCachedPath(cachePath);
 
+        // set the output values
+        setOutputs(false, version)
+
         core.debug(`Installed sqlite version: ${version} from ${url}`)
     } catch(err) {
         core.debug(`Installation of sqlite version: ${version} generated an error`)
@@ -224,6 +385,20 @@ module.exports.setup_sqlite = async function setup_sqlite(version, year, url_pre
 }
 
 let cleanup_fcns = new Set()
+
+/**
+ * This method will set the output 'cache-hit' and 'sqlite-version' for
+ * the output values of this action.  It will set cache-hit to true if we
+ * are using a version that has already been cached, else we set this to
+ * false.  It will set the sqlite-version output to the installed version.
+ *
+ * @param {boolean} cached if the version used was cached already
+ * @param {string} version the installed version
+ */
+function setOutputs(cached, version) {
+    core.setOutput('cache-hit', cached);
+    core.setOutput('sqlite-version', version);
+}
 
 /**
  * This method will include the directory name that exists within the passed cached
@@ -261,13 +436,14 @@ function add_cleanup(fcn) {
  *
  * @param {function} fcn the function that will be removed from the set
  */
-function remove_cleanup(fcn) {
-    if (cleanup_fcns.delete(fcn)) {
-        core.debug('The cleanup function:', fcn, 'was added to the cleanup function set')
-    } else {
-        core.debug('Unable to add the cleanup function:', fcn, 'to the cleanup functin set')
-    }
-}
+// NOTE: Comment this out for now
+// function remove_cleanup(fcn) {
+//     if (cleanup_fcns.delete(fcn)) {
+//         core.debug('The cleanup function:', fcn, 'was added to the cleanup function set')
+//     } else {
+//         core.debug('Unable to add the cleanup function:', fcn, 'to the cleanup functin set')
+//     }
+// }
 
 /**
  * This method will be called at the end of processing the setup of the sqlite

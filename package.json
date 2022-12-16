@@ -1,10 +1,10 @@
 {
-  "name": "setup-sqlite",
+  "name": "@ccorsi/setup-sqlite",
   "version": "1.0.0",
   "description": "Setup Action for the sqlite distribution",
   "main": "dist/main.js",
   "scripts": {
-    "lint": "eslint",
+    "lint": "eslint src",
     "prepare": "ncc build src/main.js -o dist",
     "all": "npm run lint && npm run prepare && npm test",
     "test": "jest"
@@ -16,7 +16,7 @@
   "keywords": [
     "GitHub",
     "Actions",
-    "JavaScript",
+    "setup",
     "native",
     "sqlite"
   ],

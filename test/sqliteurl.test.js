@@ -34,12 +34,12 @@ inputs.forEach(([version, year]) => {
     expected.push([ expectedTarget, expectedURL ])
 })
 
-test('correct download url and target', () => {
+test('correct download url and target', async () => {
     const version = '3.4.0'
     const year = '2022'
     const url_prefix = 'https://www.sqlite.org/'
 
-    const [ url, target ] = create_sqlite_url(version, year, url_prefix)
+    const [ _, url, target ] = await create_sqlite_url(version, year, url_prefix)
 
     const expectedTarget = `sqlite-tools-${platforms[process.platform]}-x86-3040000.zip`
     expect(target).toBe(expectedTarget)
@@ -52,10 +52,10 @@ for (let cnt = 0 ; cnt < inputs.length ; cnt++) {
     const [version, year] = inputs[cnt]
     const [expectedTarget, expectedURL] = expected[cnt]
 
-    test(`correct download for version ${version} and year ${year}`, () => {
+    test(`correct download for version ${version} and year ${year}`, async () => {
         const url_prefix = 'https://www.sqlite.org/'
 
-        const [ url, target ] = create_sqlite_url(version, year, url_prefix)
+        const [ _, url, target ] = await create_sqlite_url(version, year, url_prefix)
 
         expect(target).toBe(expectedTarget)
         expect(url).toBe(expectedURL)

@@ -16,8 +16,8 @@ Here is a table of the different inputs that can be used with this action
 
 | Name | Description | Optional | Default Value |
 | ---- | ----------- | -------- | ------------- |
-| sqlite-version | version of the SQLite to install | false | 3.40.0 |
-| sqlite-year | release year of the SQLite to install | false | 2022 |
+| sqlite-version | version of the SQLite to install | true |  |
+| sqlite-year | release year of the SQLite to install | true |  |
 | sqlite-url-path | the SQLite download site | true | https://www.sqlite.org/ |
 
 **Basic:**
@@ -59,21 +59,14 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        sqlite:
-          version:
-            - 3.40.0
-            - 3.35.0
-          year:
-            - 2022
-            - 2021
-    name: SQLite ${{ matrix.sqlite.version }} sample
+        sqlite: [ 3.40.0, 3.35.0 ]
+    name: SQLite ${{ matrix.sqlite }} sample
     steps:
       - uses: actions/checkout@v3
       - name: Setup SQLite
         uses: actions/setup-sqlite@v1
         with:
-          sqlite-version: ${{ matrix.sqlite.version }}
-          sqlite-year: ${{ matrix.sqlite.year }}
+          sqlite-version: ${{ matrix.sqlite }}
       - run: sqlite3 foo "create table foo (a int, b text)"
 ```
 

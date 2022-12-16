@@ -14,7 +14,7 @@ const { setup_sqlite, cleanup } = require('../src/setup')
  * This information was retrieved from https://www.sqlite.org/chronology.html.
  */
 const distributions = {
-	2022: [ '3.40.0', // '3.39.4', '3.39.3', '3.39.2', '3.39.1', '3.39.0',
+	2022: [ /*'3.40.0',*/ '3.39.4', //'3.39.3', '3.39.2', '3.39.1', '3.39.0',
 			// '3.38.5', '3.38.4', '3.38.3', '3.38.2', '3.38.1', '3.38.0',
 			'3.37.2' ],
 	2021: [ '3.37.1', // '3.37.0', '3.36.0', '3.35.5', '3.35.4', '3.35.3',
@@ -30,8 +30,8 @@ const distributions = {
 			/*'3.16.1',*/ '3.16.0' ]
 }
 
-// Set test limit to 30 seconds
-jest.setTimeout(30000)
+// Set test limit to 60 seconds
+jest.setTimeout(60000)
 
 const cachePath = path.join(__dirname, 'CACHE')
 const tempPath =  path.join(__dirname, 'TEMP')
@@ -51,6 +51,38 @@ beforeAll(() => {
 })
 
 const url_prefix = 'https://www.sqlite.org/'
+
+// Check that the latest release of SQLite will be installed when version
+// and year was not defined
+test('setup without any version or year defined', async () => {
+	const now = Date.now()
+
+	// execute setup_sqlite intallation
+	await setup_sqlite(undefined, undefined, url_prefix)
+
+	// run the cleanup callbacks
+	await cleanup()
+})
+
+test('setup with version number only', async () => {
+	const now = Date.now()
+
+	// execute setup_sqlite intallation
+	await setup_sqlite('3.38.5', undefined, url_prefix)
+
+	// run the cleanup callbacks
+	await cleanup()
+})
+
+test('setup with version year only', async () => {
+	const now = Date.now()
+
+	// execute setup_sqlite intallation
+	await setup_sqlite(undefined, '2021', url_prefix)
+
+	// run the cleanup callbacks
+	await cleanup()
+})
 
 // Create a test for each distributed sqlite version
 for ( const [year, versions] of Object.entries(distributions) ) {

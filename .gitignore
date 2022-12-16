@@ -1,6 +1,3 @@
 # We don't want to include this since it is generated using the npm install command
 node_modules
 
-# The following directory is used to create the scipt using the ncc command and doesn't need to be added to git.
-dist
-

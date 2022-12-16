@@ -14,15 +14,11 @@ inputs:
     description: 'The url prefix to the SQLite download site without the year and version information, for example, https://www.sqlite.org/'
     required: false
     default: 'https://www.sqlite.org/'
-# TODO: Do we really need this extra detail?
 outputs:
-#   cache-hit:
-#     description: 'A boolean value to indicate if a cache was hit'
+  cache-hit:
+    description: 'A boolean value to indicate if a cache was hit'
   sqlite-version:
     description: 'The installed SQLite version'
 runs:
   using: 'node16' # can this be node18
   main: 'dist/index.js' # installs the requested sqlite version
-  # TODO: Can the cleanup process happen within the main call instead?
-  # post: 'src/cache.js' # updates the cache for the installed sqlite version
-  # post-if: success() # only execute post command if successfully installed requested sqlite version
