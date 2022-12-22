@@ -44,8 +44,9 @@ const { sep } = require('path');
 function formatVersion(version) {
     // Determine that the passed version is defined
     if (version == undefined || version.length == 0) {
+        core.info('A valid SQLite version is required')
         // This is an invalid version string so throw an error
-        throw new Error(`Invalid sqlite version: ${version}`)
+        throw new Error(`A valid sqlite version is required`)
     }
 
     let versions = version.split('.')
@@ -53,7 +54,7 @@ function formatVersion(version) {
     // Determine that the version string has between 1 and 4 sections
     if (versions.length > 4) {
         // This is an invalid version so throw an error
-        throw new Error(`Invalid sqlite version: ${version}`)
+        throw new Error(`Invalid sqlite version: ${version}, required X.Y.Z[.S] format`)
     }
 
     // The passed version string is correctly formatted thus create the
@@ -64,14 +65,14 @@ function formatVersion(version) {
     versions.forEach( (ver) => {
         if (isNaN(Number(ver))) {
             // Version has to be a number
-            throw new Error(`Invalid sqlite version format: ${version}`)
+            throw new Error(`Invalid SQLite version format: ${version}`)
         }
 
         // Complain only if the version number is greater than 2 digits unless it
         // is the first version number digit.
         if (versionString.length > 0 && ( ver.length == 0 || ver.length > 2 )) {
             // Version number cannot be zero or greater than 2 entries
-            throw new Error(`Invalid sqlite version format: ${version}`)
+            throw new Error(`Invalid SQLite version format: ${version}`)
         }
 
         // Append the current version number and append a 0 if the length is
@@ -115,7 +116,7 @@ function create_target_filename(version) {
             return `sqlite-tools-osx-x86-${version}.zip`
         // unsupported versions
         default:
-            throw new Error(`The operating system: ${process.platform} sqlite setup is not supported by this action`)
+            throw new Error(`The operating system: ${process.platform} for SQLite is not supported by this setup action`)
     }
 }
 
@@ -142,8 +143,8 @@ async function getSQLiteVersionInfo(version, year) {
 
         // check if the request was successful
         if (res.message.statusCode != 200) {
-            core.debug(`The request ${tag} failed with status code: ${res.message.statusCode} and status message: ${res.message.statusMessage}`)
-            throw new Error(`Unable to retrieve version information for version ${version}`)
+            core.info(`The requested ${tag} failed with status code: ${res.message.statusCode} and status message: ${res.message.statusMessage}`)
+            throw new Error(`Unable to retrieve version information for SQLite version ${version}`)
         }
 
         // get the returned body
@@ -160,8 +161,8 @@ async function getSQLiteVersionInfo(version, year) {
 
         // check to see that the get was successful
         if (res.message.statusCode != 200) {
-            core.debug(`The commit url: ${commitUrl} request failed with status code: ${res.message.statusCode}`)
-            throw new Error(`Unable to get version information SQLite version ${version}`)
+            core.info(`The commit url: ${commitUrl} request failed with status code: ${res.message.statusCode} and message: ${res.message.statusMessage}`)
+            throw new Error(`Unable to get version information for SQLite version ${version}`)
         }
 
         // extract body
@@ -202,9 +203,9 @@ async function getSQLiteVersionInfo(version, year) {
         // eat the rest of the input information so that no memory leak will be generated
         res.message.resume()
 
-        core.debug(`Unable to get tags information `)
+        core.info(`Unable to get tags information for SQLite version ${version} with status code: ${res.message.statusCode} and message: ${res.message.statusMessage}`)
         // Unable to retrieve the tags information from GitHub
-        throw new Error(`Unable to get tags information from GitHub: ${res.message.statusMessage}`)
+        throw new Error(`Unable to get tags information from GitHub for SQLite version: ${version} with status message: ${res.message.statusMessage}`)
     }
 
     // Get the returned string information
@@ -223,7 +224,7 @@ async function getSQLiteVersionInfo(version, year) {
 
     // Determine if we've found any entries
     if (entry == undefined) {
-        throw new Error("No SQLite version information was found")
+        throw new Error(`No SQLite version information was found for SQLite version: ${version}`)
     }
 
     // we've found an entry with a valid tag information, extract data
@@ -238,8 +239,8 @@ async function getSQLiteVersionInfo(version, year) {
 
     // check to see that the get was successful
     if (res.message.statusCode != 200) {
-        core.debug(`Information for commit url: ${commitUrl} was not retrieved`)
-        core.debug(`Returned statusCode: ${res.message.statusCode} with statusMessage: ${res.message.statusMessage}`)
+        core.info(`Information for commit url: ${commitUrl} was not retrieved`)
+        core.info(`The returned status code: ${res.message.statusCode} and message: ${res.message.statusMessage}`)
         throw new Error(`Unable to get version information SQLite version ${version}, status code: ${res.message.statusCode}`)
     }
 
@@ -283,7 +284,7 @@ async function create_sqlite_url(version, year, url_prefix) {
             [ version, year ] = await getSQLiteVersionInfo(version, year)
         }
     } catch(err) {
-        core.debug(`An error was generated when trying to retrieve SQLite version information with error message: ${err.message}`)
+        core.info(`An error was generated when trying to retrieve SQLite version information with error message: ${err.message}`)
         throw err
     }
 
@@ -327,17 +328,17 @@ module.exports.setup_sqlite = async function setup_sqlite(version, year, url_pre
     let cachePath = find('sqlite', version)
 
     if (cachePath.length > 0) {
-        core.debug(`Using cached sqlite version ${version}`)
+        core.info(`Using cached SQLite version ${version}`)
         await addCachedPath(cachePath);
         // Set the output entries
         setOutputs(true, version);
         return // no need to do anything else
     }
 
-    core.info(`Installing sqlite version: ${version}`)
+    core.info(`Installing SQLite version: ${version}`)
 
     try {
-        core.debug(`Installing sqlite version: ${version} from ${url}`)
+        core.debug(`Installing SQLite version: ${version} from ${url}`)
 
         if (process.platform == 'win32') {
             targetName = await downloadTool(url, targetName)
@@ -352,7 +353,7 @@ module.exports.setup_sqlite = async function setup_sqlite(version, year, url_pre
             core.debug(`Deleted target file ${targetName}`)
         })
 
-        core.info(`extracting zip file: ${targetName}`)
+        core.debug(`Extracting zip file: ${targetName}`)
 
         // unzip the files to a local host directory and add the path
         const sqliteExtractedFolder = await extractZip(targetName)
@@ -375,9 +376,9 @@ module.exports.setup_sqlite = async function setup_sqlite(version, year, url_pre
         // set the output values
         setOutputs(false, version)
 
-        core.debug(`Installed sqlite version: ${version} from ${url}`)
+        core.info(`Installed sqlite version: ${version} from ${url}`)
     } catch(err) {
-        core.debug(`Installation of sqlite version: ${version} generated an error`)
+        core.debug(`Installation of SQLite version: ${version} generated an error`)
         core.debug(err)
         // re-throw the caught error
         throw err
