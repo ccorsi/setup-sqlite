@@ -331,7 +331,7 @@ module.exports.setup_sqlite = async function setup_sqlite(version, year, url_pre
         core.info(`Using cached SQLite version ${version}`)
         await addCachedPath(cachePath);
         // Set the output entries
-        setOutputs(true, version);
+        setOutputs(true, version, cachePath);
         return // no need to do anything else
     }
 
@@ -374,7 +374,7 @@ module.exports.setup_sqlite = async function setup_sqlite(version, year, url_pre
         await addCachedPath(cachePath);
 
         // set the output values
-        setOutputs(false, version)
+        setOutputs(false, version, cachePath)
 
         core.info(`Installed sqlite version: ${version} from ${url}`)
     } catch(err) {
@@ -392,13 +392,16 @@ let cleanup_fcns = new Set()
  * the output values of this action.  It will set cache-hit to true if we
  * are using a version that has already been cached, else we set this to
  * false.  It will set the sqlite-version output to the installed version.
+ * It will set the directory where the sqlite version was installed.
  *
  * @param {boolean} cached if the version used was cached already
  * @param {string} version the installed version
+ * @param {string} sqlite_bin the installation directory
  */
-function setOutputs(cached, version) {
+function setOutputs(cached, version, sqlite_bin) {
     core.setOutput('cache-hit', cached);
     core.setOutput('sqlite-version', version);
+    core.setOutput('sqlite-bin', sqlite_bin)
 }
 
 /**

@@ -13,10 +13,12 @@ inputs:
     required: false
     default: 'https://www.sqlite.org/'
 outputs:
-  cache-hit:
+  cache-hit: # used to indicate if the requested sqlite installation referenced is already locally installed
     description: 'A boolean value to indicate if a cache was hit'
-  sqlite-version:
+  sqlite-version: # useful whenever the sqlite-version was not set
     description: 'The installed SQLite version'
+  sqlite-bin: # useful whenever one wants to copy the installed sqlite version
+    description: 'The directory that the sqlite was installed'
 runs:
   using: 'node16' # can this be node18
   main: 'dist/index.js' # installs the requested sqlite version
