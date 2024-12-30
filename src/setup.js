@@ -86,10 +86,31 @@ function formatVersion(version) {
     }
 
     // we are done so let us return the generated version string needed for download
-    return versionString
+    return [ versionString, versions.map(Number) ]
 }
 
 module.exports.formatVersion = formatVersion
+
+/**
+ * This function will determine what type of build will be retreived depending
+ * on the version number.  The Linux and MacOS builds started to make builds for
+ * x64 instead of x86 with version 3.44.0 onwards.  This function will check the
+ * version and return the string 'x86' for versions before 3.44.0 else it will
+ * return 'x64'.
+ *
+ * @param {[string]} version array 
+ */
+function get_build_type(version) {
+   if (version[0] < 2) {
+      return 'x86'
+   } else if (version[0] > 3) {
+      return 'x64'
+   } else if (version[1] < 44) {
+      return 'x86'
+   } else {
+      return 'x64'
+   }
+}
 
 /**
  * This method will return the expected sqlite to be downloaded.
@@ -101,7 +122,7 @@ module.exports.formatVersion = formatVersion
  */
 function create_target_filename(version) {
     // Convert the passed version string into the expected download version string
-    version = formatVersion(version)
+    [ version, versions ] = formatVersion(version)
 
     // Determine which target to download given our operating system
     switch(process.platform) {
@@ -110,10 +131,10 @@ function create_target_filename(version) {
             return `sqlite-tools-win32-x86-${version}.zip`
         // linux versions
         case 'linux':
-            return `sqlite-tools-linux-x86-${version}.zip`
+            return `sqlite-tools-linux-${get_build_type(versions)}-${version}.zip`
         // macos versions
         case 'darwin':
-            return `sqlite-tools-osx-x86-${version}.zip`
+            return `sqlite-tools-osx-${get_build_type(versions)}-${version}.zip`
         // unsupported versions
         default:
             throw new Error(`The operating system: ${process.platform} for SQLite is not supported by this setup action`)
