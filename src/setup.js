@@ -218,6 +218,8 @@ async function getSQLiteVersionInfo(version, year) {
     // Create a client connection
     const client = new hc.HttpClient('github-sqlite-version-tags')
 
+    core.info('Executing tags information request for all version- tags')
+
     let res = await client.get(tags)
 
     if (res.message.statusCode != 200) {
@@ -240,6 +242,8 @@ async function getSQLiteVersionInfo(version, year) {
         throw new Error(`No SQLite tags information available at ${tags}`)
     }
 
+    core.debug(`Processing returned versions information: ${jsonTags}`)
+
     // Get the first entry in the list for the verison information
     let entry = jsonTags.find((entry) => entry["ref"].startsWith('refs/tags/version-'))
 
@@ -252,8 +256,12 @@ async function getSQLiteVersionInfo(version, year) {
     // get the version
     version   = entry["ref"].substring("refs/tags/version-".length)
 
+    core.debug(`Found version: ${version}`)
+
     // get the commit url to determine year of above version
     let commitUrl = entry["object"]["url"]
+
+    core.debug(`Getting date information using commit url: ${commitUrl}`)
 
     // retrieve information for the commit url
     res = await client.get(commitUrl)
@@ -270,6 +278,8 @@ async function getSQLiteVersionInfo(version, year) {
 
     // convert into json object
     const jsonCommit = JSON.parse(body)
+
+    core.debug(`Extracting date information from json object: ${jsonCommit}`)
 
     // extract the year information
     let date = new Date(jsonCommit["committer"]["date"])

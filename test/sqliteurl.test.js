@@ -24,7 +24,7 @@ let expected = []
 
 inputs.forEach(([version, year]) => {
     // Convert the correct version into the expected version string
-    version = formatVersion(version)
+    [ version, _ ] = formatVersion(version)
 
     // Produce the expected target and expected url from the tests
     const expectedTarget = `sqlite-tools-${platforms[process.platform]}-x86-${version}.zip`
