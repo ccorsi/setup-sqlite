@@ -220,7 +220,7 @@ async function getSQLiteVersionInfo(version, year) {
     }
 
     // Get the first entry in the list for the verison information
-    let entry = jsonTags.find((entry) => entry["name"].startsWith('version-'))
+    let entry = jsonTags.find((entry) => entry["ref"].startsWith('refs/tags/version-'))
 
     // Determine if we've found any entries
     if (entry == undefined) {
@@ -229,10 +229,10 @@ async function getSQLiteVersionInfo(version, year) {
 
     // we've found an entry with a valid tag information, extract data
     // get the version
-    version   = entry["name"].substring("version-".length)
+    version   = entry["ref"].substring("refs/tags/version-".length)
 
     // get the commit url to determine year of above version
-    let commitUrl = entry["commit"]["url"]
+    let commitUrl = entry["object"]["url"]
 
     // retrieve information for the commit url
     res = await client.get(commitUrl)
