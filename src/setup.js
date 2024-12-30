@@ -251,7 +251,7 @@ async function getSQLiteVersionInfo(version, year) {
     const jsonCommit = JSON.parse(body)
 
     // extract the year information
-    let date = new Date(jsonCommit["commit"]["committer"]["date"])
+    let date = new Date(jsonCommit["committer"]["date"])
 
     // get associated year for commit
     year = `${date.getFullYear()}`
