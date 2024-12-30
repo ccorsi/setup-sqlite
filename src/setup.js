@@ -192,7 +192,7 @@ async function getSQLiteVersionInfo(version, year) {
     }
 
     // Used to retrieve the latest SQLite version information
-    const tags = 'https://api.github.com/repos/sqlite/sqlite/git/matching-refs/version-'
+    const tags = 'https://api.github.com/repos/sqlite/sqlite/git/matching-refs/tags/version-'
 
     // Create a client connection
     const client = new hc.HttpClient('github-sqlite-version-tags')
