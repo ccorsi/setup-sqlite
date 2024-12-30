@@ -220,7 +220,11 @@ async function getSQLiteVersionInfo(version, year) {
 
     core.info('Executing tags information request for all version- tags')
 
-    let res = await client.get(tags)
+    try {
+        let res = await client.get(tags)
+    } catch (err) {
+        throw new Error(`Unable to process the https call: ${tag}`, { cause: err } )
+    }
 
     if (res.message.statusCode != 200) {
         // eat the rest of the input information so that no memory leak will be generated
@@ -263,8 +267,12 @@ async function getSQLiteVersionInfo(version, year) {
 
     core.debug(`Getting date information using commit url: ${commitUrl}`)
 
-    // retrieve information for the commit url
-    res = await client.get(commitUrl)
+    try {
+        // retrieve information for the commit url
+        res = await client.get(commitUrl)
+    } catch (err) {
+        throw new Error(`An error was generated when processing commit url: ${commitUrl}`, { cause: err } )
+    }
 
     // check to see that the get was successful
     if (res.message.statusCode != 200) {
