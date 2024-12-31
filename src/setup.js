@@ -220,8 +220,10 @@ async function getSQLiteVersionInfo(version, year) {
 
     core.info('Executing tags information request for all version- tags')
 
+    let res
+
     try {
-        let res = await client.get(tags)
+        res = await client.get(tags)
     } catch (err) {
         throw new Error(`Unable to process the https call: ${tag}`, { cause: err } )
     }
@@ -258,7 +260,7 @@ async function getSQLiteVersionInfo(version, year) {
 
     // we've found an entry with a valid tag information, extract data
     // get the version
-    version   = entry["ref"].substring("refs/tags/version-".length)
+    version = entry["ref"].substring("refs/tags/version-".length)
 
     core.debug(`Found version: ${version}`)
 
