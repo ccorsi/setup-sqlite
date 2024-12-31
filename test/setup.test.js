@@ -14,6 +14,7 @@ const { setup_sqlite, cleanup } = require('../src/setup')
  * This information was retrieved from https://www.sqlite.org/chronology.html.
  */
 const distributions = {
+        2024: [ '3.47.2' ],
 	2022: [ // '3.40.0', '3.39.4', '3.39.3', '3.39.2', '3.39.1', '3.39.0',
 			// '3.38.5', '3.38.4', '3.38.3', '3.38.2', '3.38.1', '3.38.0',
 			'3.37.2' ],
