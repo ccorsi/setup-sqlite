@@ -159,9 +159,11 @@ async function getSQLiteVersionInfo(version, year) {
         // Create a client connection
         const client = new hc.HttpClient(`github-sqlite-tag-${version}`)
 
+        let res
+
         try {
             // retrieve a list of tags
-            let res = await client.get(tag)
+            res = await client.get(tag)
         } catch (err) {
             core.info(`The client request: ${tag} generated an error: ${err}`)
             throw new Error(`The client request: ${tag} generated an error`, { cause: err })
