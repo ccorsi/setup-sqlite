@@ -379,8 +379,13 @@ module.exports.create_sqlite_url = create_sqlite_url
 module.exports.setup_sqlite = async function setup_sqlite(version, year, url_prefix) {
     let url, targetName
 
-    // create the required version, url and targetName
-    [ version, url, targetName ] = await create_sqlite_url(version, year, url_prefix)
+    try {
+        // create the required version, url and targetName
+        [ version, url, targetName ] = await create_sqlite_url(version, year, url_prefix)
+    } catch (err) {
+        core.error(`An error was generated when call create_sqlite_url for version: ${version}, year: ${year} and url_prefix: ${url_prefix}`)
+        throw new Error(`An error was generated when call create_sql_url for version: ${version}, year: ${year} and url_prefix: ${url_prefix}`, { cause: err })
+    }
 
     // determine if the given version was already cached or not
     let cachePath = find('sqlite', version)
