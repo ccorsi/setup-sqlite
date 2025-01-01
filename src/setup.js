@@ -159,8 +159,13 @@ async function getSQLiteVersionInfo(version, year) {
         // Create a client connection
         const client = new hc.HttpClient(`github-sqlite-tag-${version}`)
 
-        // retrieve a list of tags
-        let res = await client.get(tag)
+        try {
+            // retrieve a list of tags
+            let res = await client.get(tag)
+        } catch (err) {
+            core.info(`The client request: ${tag} generated an error: ${err}`)
+            throw new Error(`The client request: ${tag} generated an error`, { cause: err })
+        }
 
         // check if the request was successful
         if (res.message.statusCode != 200) {
@@ -177,8 +182,13 @@ async function getSQLiteVersionInfo(version, year) {
         // extract the commit url
         let commitUrl = jsonTag["object"]["url"]
 
-        // retrieve information for the commit url
-        res = await client.get(commitUrl)
+        try {
+            // retrieve information for the commit url
+            res = await client.get(commitUrl)
+        } catch (err) {
+            core.info(`The client request: ${commitUrl} generated an error: ${err}`)
+            throw new Error(`The client request: ${commitUrl} generated an error`, { cause: err })
+        }
 
         // check to see that the get was successful
         if (res.message.statusCode != 200) {
