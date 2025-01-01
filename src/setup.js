@@ -237,16 +237,17 @@ async function getSQLiteVersionInfo(version, year) {
     try {
         res = await client.get(tags)
     } catch (err) {
-        throw new Error(`Unable to process the https call: ${tag}`, { cause: err } )
+        throw new Error(`Unable to process the https call: ${tags}`, { cause: err } )
     }
 
     if (res.message.statusCode != 200) {
         // eat the rest of the input information so that no memory leak will be generated
         res.message.resume()
 
-        core.info(`Unable to get tags information for SQLite version ${version} with status code: ${res.message.statusCode} and message: ${res.message.statusMessage}`)
+        core.error(`The https call for versions using url: ${tags} failed with the following data: ${res}`)
+        core.info(`Unable to get versions information for SQLite with status code: ${res.message.statusCode} and message: ${res.message.statusMessage}`)
         // Unable to retrieve the tags information from GitHub
-        throw new Error(`Unable to get tags information from GitHub for SQLite version: ${version} with status message: ${res.message.statusMessage}`)
+        throw new Error(`Unable to get versions information from GitHub for SQLite with status message: ${res.message.statusMessage}`)
     }
 
     // Get the returned string information
@@ -290,6 +291,10 @@ async function getSQLiteVersionInfo(version, year) {
 
     // check to see that the get was successful
     if (res.message.statusCode != 200) {
+        // eat the rest of the input information so that no memory leak will be generated
+        res.message.resume()
+
+        core.error(`The https call for the commit using url: ${commitUrl} failed with the following data: ${res}`)
         core.info(`Information for commit url: ${commitUrl} was not retrieved`)
         core.info(`The returned status code: ${res.message.statusCode} and message: ${res.message.statusMessage}`)
         throw new Error(`Unable to get version information SQLite version ${version}, status code: ${res.message.statusCode}`)
