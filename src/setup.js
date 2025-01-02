@@ -124,17 +124,19 @@ function create_target_filename(version) {
     // Convert the passed version string into the expected download version string
     [ version, versions ] = formatVersion(version)
 
+    build_type = get_build_type(versions)
+
     // Determine which target to download given our operating system
     switch(process.platform) {
         // windows versions
         case 'win32':
-            return `sqlite-tools-win32-${get_build_type(versions)}-${version}.zip`
+            return `sqlite-tools-${build_type === 'x32' ? 'win32' : 'win' }-${build_type}-${version}.zip`
         // linux versions
         case 'linux':
-            return `sqlite-tools-linux-${get_build_type(versions)}-${version}.zip`
+            return `sqlite-tools-linux-${build_type-${version}.zip`
         // macos versions
         case 'darwin':
-            return `sqlite-tools-osx-${get_build_type(versions)}-${version}.zip`
+            return `sqlite-tools-osx-${build_type}-${version}.zip`
         // unsupported versions
         default:
             throw new Error(`The operating system: ${process.platform} for SQLite is not supported by this setup action`)
