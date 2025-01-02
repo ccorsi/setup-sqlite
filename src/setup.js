@@ -501,8 +501,7 @@ module.exports.setup_sqlite = async function setup_sqlite(version, year, url_pre
 
         core.info(`Installed sqlite version: ${version} from ${url}`)
     } catch(cause) {
-        core.error(`Installation of SQLite version: ${version} generated an error`)
-        core.error(cause)
+        core.error(`Installation of SQLite version: ${version} generated an error from ${url}`)
         core.error(cause.stack)
         // re-throw the caught error within a new Error instance
         throw new Error(`Installation of SQLite version: ${version} generated an error`, { cause })
