@@ -232,24 +232,59 @@ async function getSQLiteVersionInfo(version, year) {
 
     core.info('Executing tags information request for all version- tags')
 
-    let res
+    let res, retryCount = 0
 
-    try {
-        res = await client.get(tags)
-    } catch (cause) {
-        core.error(`Unable to get version tags using https call: ${tags}`)
-        throw new Error(`Unable to process the https call: ${tags}`, { cause } )
-    }
+    do {
+        try {
+            res = await client.get(tags)
+        } catch (cause) {
+            core.error(`Unable to get version tags using https call: ${tags}`)
+            throw new Error(`Unable to process the https call: ${tags}`, { cause } )
+        }
 
-    if (res.message.statusCode != 200) {
-        // eat the rest of the input information so that no memory leak will be generated
-        res.message.resume()
+        if (res.message.statusCode == 200) {
+           break // break out of the loop since we received the required data
+        } else if (res.message.statusCode === 403 && retryCount < 3 && res.message.headers['retry-after']) {
+            // eat the rest of the input information so that no memory leak will be generated
+            res.message.resume()
 
-        core.error(`The https call for versions using url: ${tags} failed with the following data: ${res.message.headers}`)
-        core.info(`Unable to get versions information for SQLite with status code: ${res.message.statusCode} and message: ${res.message.statusMessage}`)
-        // Unable to retrieve the tags information from GitHub
-        throw new Error(`Unable to get versions information from GitHub for SQLite with status message: ${res.message.statusMessage}`)
-    }
+            // retry the command after the amount of second within the header retry-after attribute
+            await retry(Number(res.message.headers['retry-after']))
+
+            // increment the retryCount
+            retryCount += 1
+
+        } else if (res.message.statusCode === 403 && && retryCount < 3 res.message.headers['x-ratelimit-remaining'] === '0') {
+            // eat the rest of the input information so that no memory leak will be generated
+            res.message.resume()
+
+            // Get the ratelimit reset date in utc epoch seconds
+            const resetTimeEpochSeconds = res.message.headers['x-ratelimit-reset'];
+
+            // Get the current utc time in epoch seconds
+            const currentTimeEpochSeconds = Math.floor(Date.now() / 1000);
+
+            // Determine the minimum amount of seconds that one should wait before trying again.
+            const secondsToWait = resetTimeEpochSeconds - currentTimeEpochSeconds;
+
+            core.warning(`You have exceeded your rate limit. Retrying in ${secondsToWait} seconds.`);
+            setTimeout(requestRetry, secondsToWait * 1000, route, parameters);
+
+            // retry the command after the amount of second within the header retry-after attribute
+            await retry(secondsToWait)
+
+            // increment the retryCount
+            retryCount += 1
+
+        } else {
+            // eat the rest of the input information so that no memory leak will be generated
+            res.message.resume()
+
+            core.error(`The https call for versions using url: ${tags} failed with status code: ${res.message.statusCode} and message: ${res.message.statusMessage}`)
+            // Unable to retrieve the tags information from GitHub
+            throw new Error(`Unable to get versions information from GitHub for SQLite with status message: ${res.message.statusMessage}`)
+        }
+    } while (true)
 
     // Get the returned string information
     let body = await res.readBody()
