@@ -303,8 +303,8 @@ async function getSQLiteVersionInfo(version, year) {
     core.debug(`Processing returned versions information: ${jsonTags}`)
 
     function cmp(left, right) {
-       const left_version = left["ref"].split('-')[1].map(Number)
-       const right_version = right["ref"].split('-')[1].map(Number)
+       const left_version = left["ref"].split('-')[1].split('.').map(Number)
+       const right_version = right["ref"].split('-')[1].split('.').map(Number)
 
        if (left_version[0] != right_version[0]) {
           return left_version[0] > right_version[0] ? -1 : 1
