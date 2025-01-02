@@ -1,7 +1,7 @@
 // ==================================================================================
 // MIT License
 
-// Copyright (c) 2022 Claudio Corsi
+// Copyright (c) 2022-2025 Claudio Corsi
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -44,9 +44,10 @@ const { sep } = require('path');
 function formatVersion(version) {
     // Determine that the passed version is defined
     if (version == undefined || version.length == 0) {
-        core.info('A valid SQLite version is required')
+        const message = 'A valid SQLite version is required'
+        core.info(message)
         // This is an invalid version string so throw an error
-        throw new Error(`A valid sqlite version is required`)
+        throw new Error(message)
     }
 
     let versions = version.split('.')
@@ -98,7 +99,7 @@ module.exports.formatVersion = formatVersion
  * version and return the string 'x86' for versions before 3.44.0 else it will
  * return 'x64'.
  *
- * @param {[string]} version array 
+ * @param {[Number]} version array
  */
 function get_build_type(version) {
    if (version[0] < 2) {
@@ -146,6 +147,14 @@ function create_target_filename(version) {
 
 module.exports.create_target_filename = create_target_filename
 
+/*
+ * This method will be used whenever we need to wait a certain amount of time before continuing.
+ * This is the case whenever we've reach the rate limit on the github rest api calls.  This method
+ * will sleep for the passed seconds before continuing.
+ *
+ * @param {Number} the number of seconds that this method will sleep
+ * @return {Promise<void>}  A Promise instance that doesn't return any value
+ */
 function sleep(seconds) {
    return new Promise(resolve => setTimeout(resolve, seconds * 1000))
 }
@@ -172,8 +181,10 @@ async function getSQLiteVersionInfo(version, year) {
             // retrieve a list of tags
             res = await client.get(tag)
         } catch (cause) {
-            core.error(`The client request: ${tag} generated an error: ${cause}`)
-            throw new Error(`The client request: ${tag} generated an error`, { cause })
+            const message = `The client request: ${tag} generated an error`)
+            core.error(message)
+            core.error(cause.stack)
+            throw new Error(message, { cause })
         }
 
         // check if the request was successful
@@ -195,8 +206,10 @@ async function getSQLiteVersionInfo(version, year) {
             // retrieve information for the commit url
             res = await client.get(commitUrl)
         } catch (cause) {
-            core.error(`The client request: ${commitUrl} generated an error: ${cause}`)
-            throw new Error(`The client request: ${commitUrl} generated an error`, { cause })
+            const message = `The client request: ${commitUrl} generated an error`)
+            core.error(message)
+            core.error(cause.stack)
+            throw new Error(message, { cause })
         }
 
         // check to see that the get was successful
@@ -245,18 +258,26 @@ async function getSQLiteVersionInfo(version, year) {
         try {
             res = await client.get(tags)
         } catch (cause) {
-            core.error(`Unable to get version tags using https call: ${tags}`)
-            throw new Error(`Unable to process the https call: ${tags}`, { cause } )
+            const message = `Unable to get version tags using https call: ${tags}`
+            core.error(message)
+            core.error(cause.stack)
+            throw new Error(message, { cause } )
         }
 
+        // check to see that the get was successful
         if (res.message.statusCode == 200) {
            break // break out of the loop since we received the required data
         } else if (res.message.statusCode === 403 && retryCount < 3 && res.message.headers['retry-after']) {
             // eat the rest of the input information so that no memory leak will be generated
             res.message.resume()
 
+            // Get the minimum amount of seconds that one should wait before trying again.
+            const secondsToWait = Number(res.message.headers['retry-after'])
+
+            core.warning(`You have exceeded your rate limit. Retrying in ${secondsToWait} seconds.`);
+
             // retry the command after the amount of second within the header retry-after attribute
-            await sleep(Number(res.message.headers['retry-after']))
+            await sleep(secondsToWait)
 
             // increment the retryCount
             retryCount += 1
@@ -305,10 +326,17 @@ async function getSQLiteVersionInfo(version, year) {
 
     core.debug(`Processing returned versions information: ${jsonTags}`)
 
+    /*
+     * This inner function is used to correctly sort the returned array of 
+     * tags such that the latest version information for SQLite will be
+     * the first entry in the array.
+     */
     function cmp(left, right) {
+       // Get the version information in an array of numbers from the passed json object
        const left_version = left["ref"].split('-')[1].split('.').map(Number)
        const right_version = right["ref"].split('-')[1].split('.').map(Number)
 
+       // Determine which of the two versions is newer.
        if (left_version[0] != right_version[0]) {
           return left_version[0] > right_version[0] ? -1 : 1
        } else if (left_version[1] != right_version[1]) {
@@ -319,19 +347,12 @@ async function getSQLiteVersionInfo(version, year) {
     }
 
     // sort the entries in the array of json objects
-    // jsonTags.sort((left,right) => left["ref"] > right["ref"] ? -1 : 1)
     jsonTags.sort(cmp)
 
     // Get the first entry in the list for the verison information
     let entry = jsonTags[0]
 
-    // Determine if we've found any entries
-    if (entry == undefined) {
-        throw new Error(`No SQLite version information was found for SQLite version: ${version}`)
-    }
-
-    // we've found an entry with a valid tag information, extract data
-    // get the version
+    // we've found an entry with a valid tag information, get the version
     version = entry["ref"].substring("refs/tags/version-".length)
 
     core.debug(`Found version: ${version}`)
@@ -341,24 +362,67 @@ async function getSQLiteVersionInfo(version, year) {
 
     core.debug(`Getting date information using commit url: ${commitUrl}`)
 
-    try {
-        // retrieve information for the commit url
-        res = await client.get(commitUrl)
-    } catch (cause) {
-        core.error(`Unable to get commit information using https url: ${commitUrl}`)
-        throw new Error(`An error was generated when processing commit url: ${commitUrl}`, { cause } )
-    }
+    let retryCount = 0
 
-    // check to see that the get was successful
-    if (res.message.statusCode != 200) {
-        // eat the rest of the input information so that no memory leak will be generated
-        res.message.resume()
+    do {
+        try {
+            // retrieve information for the commit url
+            res = await client.get(commitUrl)
+        } catch (cause) {
+            const message = `Unable to get commit information using https url: ${commitUrl}`
+            core.error(message)
+            core.error(cause.stack)
+            throw new Error(message, { cause } )
+        }
 
-        core.error(`The https call for the commit using url: ${commitUrl} failed with the following data: ${res.message.headers}`)
-        core.info(`Information for commit url: ${commitUrl} was not retrieved`)
-        core.info(`The returned status code: ${res.message.statusCode} and message: ${res.message.statusMessage}`)
-        throw new Error(`Unable to get version information SQLite version ${version}, status code: ${res.message.statusCode}`)
-    }
+        // check to see that the get was successful
+        if (res.message.statusCode == 200) {
+            break // break out of the loop since we received the required data
+        } else if (res.message.statusCode === 403 && retryCount < 3 && res.message.headers['retry-after']) {
+            // eat the rest of the input information so that no memory leak will be generated
+            res.message.resume()
+
+            // Get the minimum amount of seconds that one should wait before trying again.
+            const secondsToWait = Number(res.message.headers['retry-after'])
+
+            core.warning(`You have exceeded your rate limit. Retrying in ${secondsToWait} seconds.`);
+
+            // retry the command after the amount of second within the header retry-after attribute
+            await sleep(secondsToWait)
+
+            // increment the retryCount
+            retryCount += 1
+
+        } else if (res.message.statusCode === 403 && retryCount < 3 && res.message.headers['x-ratelimit-remaining'] === '0') {
+            // eat the rest of the input information so that no memory leak will be generated
+            res.message.resume()
+
+            // Get the ratelimit reset date in utc epoch seconds
+            const resetTimeEpochSeconds = res.message.headers['x-ratelimit-reset'];
+
+            // Get the current utc time in epoch seconds
+            const currentTimeEpochSeconds = Math.floor(Date.now() / 1000);
+
+            // Determine the minimum amount of seconds that one should wait before trying again.
+            const secondsToWait = resetTimeEpochSeconds - currentTimeEpochSeconds;
+
+            core.warning(`You have exceeded your rate limit. Retrying in ${secondsToWait} seconds.`);
+
+            // retry the command after the amount of second within the header retry-after attribute
+            await sleep(secondsToWait)
+
+            // increment the retryCount
+            retryCount += 1
+
+        } else {
+            // eat the rest of the input information so that no memory leak will be generated
+            res.message.resume()
+
+            core.error(`Information for commit url: ${commitUrl} was not retrieved`)
+            core.error(`The returned status code: ${res.message.statusCode} and message: ${res.message.statusMessage}`)
+            throw new Error(`Unable to get version information for SQLite version ${version}, status code: ${res.message.statusCode}`)
+        }
+    } while (true)
 
     // extract body
     body = await res.readBody()
@@ -393,17 +457,12 @@ async function getSQLiteVersionInfo(version, year) {
  * @returns The version, download url and target file name for request the version of sqlite
  */
 async function create_sqlite_url(version, year, url_prefix) {
-    try {
-        if (version == undefined || version == '') {
-            // If the version is an empty string then we retrieve the latest
-            // version that is located on github sqlite repository
-            [ version, year ] = await getSQLiteVersionInfo(version, year)
-        } else if (year == undefined || year == '') {
-            [ version, year ] = await getSQLiteVersionInfo(version, year)
-        }
-    } catch(cause) {
-        core.error(`An error was generated when trying to retrieve SQLite version information with error: ${cause.stack}`)
-        throw new Error(`An error was generated when trying to retrieve SQLite version information`, { cause })
+    if (version == undefined || version == '') {
+        // If the version is an empty string then we retrieve the latest
+        // version that is located on github sqlite repository
+        [ version, year ] = await getSQLiteVersionInfo(version, year)
+    } else if (year == undefined || year == '') {
+        [ version, year ] = await getSQLiteVersionInfo(version, year)
     }
 
     // Determine if the year was formatted correctly
@@ -439,13 +498,8 @@ module.exports.create_sqlite_url = create_sqlite_url
 module.exports.setup_sqlite = async function setup_sqlite(version, year, url_prefix) {
     let url, targetName
 
-    try {
-        // create the required version, url and targetName
-        [ version, url, targetName ] = await create_sqlite_url(version, year, url_prefix)
-    } catch (cause) {
-        core.error(`An error was generated when call create_sqlite_url for version: ${version}, year: ${year} and url_prefix: ${url_prefix}`)
-        throw new Error(`An error was generated when call create_sql_url for version: ${version}, year: ${year} and url_prefix: ${url_prefix}`, { cause })
-    }
+    // create the required version, url and targetName
+    [ version, url, targetName ] = await create_sqlite_url(version, year, url_prefix)
 
     // determine if the given version was already cached or not
     let cachePath = find('sqlite', version)
@@ -458,10 +512,8 @@ module.exports.setup_sqlite = async function setup_sqlite(version, year, url_pre
         return // no need to do anything else
     }
 
-    core.info(`Installing SQLite version: ${version}`)
-
     try {
-        core.debug(`Installing SQLite version: ${version} from ${url}`)
+        core.info(`Installing SQLite version: ${version} from ${url}`)
 
         if (process.platform == 'win32') {
             targetName = await downloadTool(url, targetName)
@@ -501,10 +553,11 @@ module.exports.setup_sqlite = async function setup_sqlite(version, year, url_pre
 
         core.info(`Installed sqlite version: ${version} from ${url}`)
     } catch(cause) {
-        core.error(`Installation of SQLite version: ${version} generated an error from ${url}`)
+        const message = `Installation of SQLite version: ${version} generated an error from ${url}`
+        core.error(message)
         core.error(cause.stack)
         // re-throw the caught error within a new Error instance
-        throw new Error(`Installation of SQLite version: ${version} generated an error`, { cause })
+        throw new Error(message, { cause })
     }
 }
 
@@ -591,3 +644,4 @@ async function cleanup() {
 }
 
 module.exports.cleanup = cleanup
+

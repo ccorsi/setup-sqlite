@@ -53,50 +53,64 @@ beforeAll(() => {
 
 const url_prefix = 'https://www.sqlite.org/'
 
+async function execute(version, year) {
+   // execute setup_sqlite intallation
+   return setup_sqlite(version, year, url_prefix).finally(
+      // run the cleanup callbacks
+      () => cleanup()
+   )
+}
+
 // Check that the latest release of SQLite will be installed when version
 // and year was not defined
 test('setup without any version or year defined', async () => {
-	const now = Date.now()
-
+   await execute(undefined, undefined)
+   /*
 	// execute setup_sqlite intallation
 	await setup_sqlite(undefined, undefined, url_prefix)
 
 	// run the cleanup callbacks
 	await cleanup()
+    */
 })
 
 test('setup with version number only', async () => {
-	const now = Date.now()
-
+   await execute('3.38.5', undefined)
+   /*
 	// execute setup_sqlite intallation
 	await setup_sqlite('3.38.5', undefined, url_prefix)
 
 	// run the cleanup callbacks
 	await cleanup()
+    */
 })
 
 test('setup with version year only', async () => {
-	const now = Date.now()
-
+   await execute(undefined, '2021')
+   /*
 	// execute setup_sqlite intallation
 	await setup_sqlite(undefined, '2021', url_prefix)
 
 	// run the cleanup callbacks
 	await cleanup()
+    */
 })
 
 // Create a test for each distributed sqlite version
 for ( const [year, versions] of Object.entries(distributions) ) {
 	versions.forEach(version => {
 		test(`setup by installing sqlite version: ${version}`, async () => {
-			const now = Date.now()
-
+                   // Execute the setup_sqlite function where none of the distributions
+                   // will cause an error from being thrown
+                   await execute(version, year)
+   /*
 			// Execute the setup_sqlite function where none of the distributions
 			// will cause an error from being thrown
 			await setup_sqlite(version, year, url_prefix)
 
 			// call the cleanup method just like the run method will
 			await cleanup()
+    */
 
 			// Check that the sqlite version has been cached
 			expect(find('sqlite', version)).not.toBe('')
@@ -107,14 +121,17 @@ for ( const [year, versions] of Object.entries(distributions) ) {
 for ( const [year, versions] of Object.entries(distributions) ) {
 	versions.forEach(version => {
 		test(`setup using cached sqlite version: ${version}`, async () => {
-			const now = Date.now()
-
+                   // Execute the setup_sqlite function where none of the distributions
+                   // will cause an error from being thrown
+                   await execute(version, year)
+   /*
 			// Execute the setup_sqlite function where none of the distributions
 			// will cause an error from being thrown
 			await setup_sqlite(version, year, url_prefix)
 
 			// call the cleanup method just like the run method will
 			await cleanup()
+    */
 
 			// Check that the sqlite version has been cached
 			expect(find('sqlite', version)).not.toBe('')
