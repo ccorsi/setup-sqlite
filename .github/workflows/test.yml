@@ -8,10 +8,6 @@ on:
     paths-ignore:
       - '**.md'
 
-env:
-  ACTIONS_RUNNER_DEBUG: true
-
-
 jobs:
   # unit tests
   units:
