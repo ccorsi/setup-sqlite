@@ -299,8 +299,22 @@ async function getSQLiteVersionInfo(version, year) {
 
     core.debug(`Processing returned versions information: ${jsonTags}`)
 
+    function cmp(left, right) {
+       const left_version = left.split('-')[1].map(Number)
+       const right_version = right.split('-')[1].map(Number)
+
+       if (left_version[0] != right_version[0]) {
+          return left_version[0] > right_version[0] ? -1 : 1
+       } else if (left_version[1] != right_version[1]) {
+          return left_version[1] > right_version[1] ? -1 : 1
+       } else {
+          return left_version[2] > right_version[2] ? -1 : 1
+       }
+    }
+
     // sort the entries in the array of json objects
-    jsonTags.sort((left,right) => left["ref"] > right["ref"] ? -1 : 1)
+    // jsonTags.sort((left,right) => left["ref"] > right["ref"] ? -1 : 1)
+    jsonTags.sort(cmp)
 
     // Get the first entry in the list for the verison information
     let entry = jsonTags[0]
