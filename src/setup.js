@@ -264,8 +264,11 @@ async function getSQLiteVersionInfo(version, year) {
 
     core.debug(`Processing returned versions information: ${jsonTags}`)
 
+    // sort the entries in the array of json objects
+    jsonTags.sort((left,right) => left["ref"] > right["ref"] ? -1 : 1)
+
     // Get the first entry in the list for the verison information
-    let entry = jsonTags.find((entry) => entry["ref"].startsWith('refs/tags/version-'))
+    let entry = jsonTags[0]
 
     // Determine if we've found any entries
     if (entry == undefined) {
