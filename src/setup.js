@@ -362,7 +362,7 @@ async function getSQLiteVersionInfo(version, year) {
 
     core.debug(`Getting date information using commit url: ${commitUrl}`)
 
-    let retryCount = 0
+    retryCount = 0
 
     do {
         try {
