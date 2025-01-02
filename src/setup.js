@@ -254,7 +254,7 @@ async function getSQLiteVersionInfo(version, year) {
             // increment the retryCount
             retryCount += 1
 
-        } else if (res.message.statusCode === 403 && && retryCount < 3 res.message.headers['x-ratelimit-remaining'] === '0') {
+        } else if (res.message.statusCode === 403 && retryCount < 3 res.message.headers['x-ratelimit-remaining'] === '0') {
             // eat the rest of the input information so that no memory leak will be generated
             res.message.resume()
 
