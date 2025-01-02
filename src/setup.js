@@ -181,7 +181,7 @@ async function getSQLiteVersionInfo(version, year) {
             // retrieve a list of tags
             res = await client.get(tag)
         } catch (cause) {
-            const message = `The client request: ${tag} generated an error`)
+            const message = `The client request: ${tag} generated an error`
             core.error(message)
             core.error(cause.stack)
             throw new Error(message, { cause })
@@ -206,7 +206,7 @@ async function getSQLiteVersionInfo(version, year) {
             // retrieve information for the commit url
             res = await client.get(commitUrl)
         } catch (cause) {
-            const message = `The client request: ${commitUrl} generated an error`)
+            const message = `The client request: ${commitUrl} generated an error`
             core.error(message)
             core.error(cause.stack)
             throw new Error(message, { cause })
