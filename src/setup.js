@@ -399,7 +399,7 @@ async function create_sqlite_url(version, year, url_prefix) {
             [ version, year ] = await getSQLiteVersionInfo(version, year)
         }
     } catch(cause) {
-        core.error(`An error was generated when trying to retrieve SQLite version information with error message: ${cause.message}`)
+        core.error(`An error was generated when trying to retrieve SQLite version information with error: ${cause.stack}`)
         throw new Error(`An error was generated when trying to retrieve SQLite version information`, { cause })
     }
 
