@@ -164,9 +164,9 @@ async function getSQLiteVersionInfo(version, year) {
         try {
             // retrieve a list of tags
             res = await client.get(tag)
-        } catch (err) {
-            core.info(`The client request: ${tag} generated an error: ${err}`)
-            throw new Error(`The client request: ${tag} generated an error`, { cause: err })
+        } catch (cause) {
+            core.error(`The client request: ${tag} generated an error: ${cause}`)
+            throw new Error(`The client request: ${tag} generated an error`, { cause })
         }
 
         // check if the request was successful
@@ -187,9 +187,9 @@ async function getSQLiteVersionInfo(version, year) {
         try {
             // retrieve information for the commit url
             res = await client.get(commitUrl)
-        } catch (err) {
-            core.info(`The client request: ${commitUrl} generated an error: ${err}`)
-            throw new Error(`The client request: ${commitUrl} generated an error`, { cause: err })
+        } catch (cause) {
+            core.error(`The client request: ${commitUrl} generated an error: ${cause}`)
+            throw new Error(`The client request: ${commitUrl} generated an error`, { cause })
         }
 
         // check to see that the get was successful
@@ -236,8 +236,9 @@ async function getSQLiteVersionInfo(version, year) {
 
     try {
         res = await client.get(tags)
-    } catch (err) {
-        throw new Error(`Unable to process the https call: ${tags}`, { cause: err } )
+    } catch (cause) {
+        core.error(`Unable to get version tags using https call: ${tags}`)
+        throw new Error(`Unable to process the https call: ${tags}`, { cause } )
     }
 
     if (res.message.statusCode != 200) {
@@ -285,8 +286,9 @@ async function getSQLiteVersionInfo(version, year) {
     try {
         // retrieve information for the commit url
         res = await client.get(commitUrl)
-    } catch (err) {
-        throw new Error(`An error was generated when processing commit url: ${commitUrl}`, { cause: err } )
+    } catch (cause) {
+        core.error(`Unable to get commit information using https url: ${commitUrl}`)
+        throw new Error(`An error was generated when processing commit url: ${commitUrl}`, { cause } )
     }
 
     // check to see that the get was successful
@@ -341,9 +343,9 @@ async function create_sqlite_url(version, year, url_prefix) {
         } else if (year == undefined || year == '') {
             [ version, year ] = await getSQLiteVersionInfo(version, year)
         }
-    } catch(err) {
-        core.info(`An error was generated when trying to retrieve SQLite version information with error message: ${err.message}`)
-        throw err
+    } catch(cause) {
+        core.error(`An error was generated when trying to retrieve SQLite version information with error message: ${cause.message}`)
+        throw new Error(`An error was generated when trying to retrieve SQLite version information`, { cause })
     }
 
     // Determine if the year was formatted correctly
@@ -382,9 +384,9 @@ module.exports.setup_sqlite = async function setup_sqlite(version, year, url_pre
     try {
         // create the required version, url and targetName
         [ version, url, targetName ] = await create_sqlite_url(version, year, url_prefix)
-    } catch (err) {
+    } catch (cause) {
         core.error(`An error was generated when call create_sqlite_url for version: ${version}, year: ${year} and url_prefix: ${url_prefix}`)
-        throw new Error(`An error was generated when call create_sql_url for version: ${version}, year: ${year} and url_prefix: ${url_prefix}`, { cause: err })
+        throw new Error(`An error was generated when call create_sql_url for version: ${version}, year: ${year} and url_prefix: ${url_prefix}`, { cause })
     }
 
     // determine if the given version was already cached or not
@@ -440,11 +442,11 @@ module.exports.setup_sqlite = async function setup_sqlite(version, year, url_pre
         setOutputs(false, version)
 
         core.info(`Installed sqlite version: ${version} from ${url}`)
-    } catch(err) {
-        core.debug(`Installation of SQLite version: ${version} generated an error`)
-        core.debug(err)
+    } catch(cause) {
+        core.error(`Installation of SQLite version: ${version} generated an error`)
+        core.error(cause)
         // re-throw the caught error within a new Error instance
-        throw new Error(`Installation of SQLite version: ${version} generated an error`, { cause: err })
+        throw new Error(`Installation of SQLite version: ${version} generated an error`, { cause })
     }
 }
 
@@ -522,7 +524,7 @@ async function cleanup() {
             core.debug('Executing cleanup function:', fcn)
             await fcn()
         } catch(err) {
-            core.debug('An error was generated when processing cleanup function:', fcn, 'with error:', err)
+            core.warning('An error was generated when processing cleanup function:', fcn, 'with error:', err)
         } finally {
             core.debug('Completed executing cleanup function:', fcn)
         }
