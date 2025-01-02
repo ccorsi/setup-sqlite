@@ -143,6 +143,10 @@ function create_target_filename(version) {
 
 module.exports.create_target_filename = create_target_filename
 
+function sleep(seconds) {
+   return new Promise(resolve => setTimeout(resolve, seconds * 1000))
+}
+
 /**
  * This method will determine the latest version of the SQLite distribution
  * using the tags information on the SQLite GitHub repository.  It will
@@ -249,7 +253,7 @@ async function getSQLiteVersionInfo(version, year) {
             res.message.resume()
 
             // retry the command after the amount of second within the header retry-after attribute
-            await retry(Number(res.message.headers['retry-after']))
+            await sleep(Number(res.message.headers['retry-after']))
 
             // increment the retryCount
             retryCount += 1
@@ -268,10 +272,9 @@ async function getSQLiteVersionInfo(version, year) {
             const secondsToWait = resetTimeEpochSeconds - currentTimeEpochSeconds;
 
             core.warning(`You have exceeded your rate limit. Retrying in ${secondsToWait} seconds.`);
-            setTimeout(requestRetry, secondsToWait * 1000, route, parameters);
 
             // retry the command after the amount of second within the header retry-after attribute
-            await retry(secondsToWait)
+            await sleep(secondsToWait)
 
             // increment the retryCount
             retryCount += 1
