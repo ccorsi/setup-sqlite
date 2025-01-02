@@ -130,7 +130,7 @@ function create_target_filename(version) {
     switch(process.platform) {
         // windows versions
         case 'win32':
-            osname = build_type == 'x32' ? 'win32' : 'win'
+            osname = build_type == 'x86' ? 'win32' : 'win'
             return `sqlite-tools-${osname}-${build_type}-${version}.zip`
         // linux versions
         case 'linux':
