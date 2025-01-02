@@ -443,8 +443,8 @@ module.exports.setup_sqlite = async function setup_sqlite(version, year, url_pre
     } catch(err) {
         core.debug(`Installation of SQLite version: ${version} generated an error`)
         core.debug(err)
-        // re-throw the caught error
-        throw err
+        // re-throw the caught error within a new Error instance
+        throw new Error(`Installation of SQLite version: ${version} generated an error`, { cause: err })
     }
 }
 
