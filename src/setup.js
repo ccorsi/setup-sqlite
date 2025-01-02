@@ -245,7 +245,7 @@ async function getSQLiteVersionInfo(version, year) {
         // eat the rest of the input information so that no memory leak will be generated
         res.message.resume()
 
-        core.error(`The https call for versions using url: ${tags} failed with the following data: ${JSON.stringify(res.message)}`)
+        core.error(`The https call for versions using url: ${tags} failed with the following data: ${res.message.headers}`)
         core.info(`Unable to get versions information for SQLite with status code: ${res.message.statusCode} and message: ${res.message.statusMessage}`)
         // Unable to retrieve the tags information from GitHub
         throw new Error(`Unable to get versions information from GitHub for SQLite with status message: ${res.message.statusMessage}`)
@@ -296,7 +296,7 @@ async function getSQLiteVersionInfo(version, year) {
         // eat the rest of the input information so that no memory leak will be generated
         res.message.resume()
 
-        core.error(`The https call for the commit using url: ${commitUrl} failed with the following data: ${JSON.stringify(res.message)}`)
+        core.error(`The https call for the commit using url: ${commitUrl} failed with the following data: ${res.message.headers}`)
         core.info(`Information for commit url: ${commitUrl} was not retrieved`)
         core.info(`The returned status code: ${res.message.statusCode} and message: ${res.message.statusMessage}`)
         throw new Error(`Unable to get version information SQLite version ${version}, status code: ${res.message.statusCode}`)
