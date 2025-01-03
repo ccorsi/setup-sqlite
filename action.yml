@@ -20,5 +20,5 @@ outputs:
   sqlite-path:
     description: 'The path of the installed SQLite version'
 runs:
-  using: 'node18' # can this be node18
+  using: 'node16' # can this be node18, no!
   main: 'dist/index.js' # installs the requested sqlite version
