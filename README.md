@@ -20,6 +20,14 @@ Here is a table of the different inputs that can be used with this action
 | sqlite-year | release year of the SQLite to install | true |  |
 | sqlite-url-path | the SQLite download site | true | https://www.sqlite.org/ |
 
+While here is a table of the different outputs that will be produced with this action
+
+| Name | Description | Example |
+| --- | --- | --- |
+| cache-hit | A boolean value to indicate if this sqlite version is a cached version | true |
+| sqlite-version | The installed SQLite version | 3.44.0 |
+| sqlite-path | The path of the installed SQLite version | '/tmp/my/cache-directory/sqlite-version-root' |
+
 **Basic:**
 
 ```yaml

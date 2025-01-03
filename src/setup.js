@@ -324,7 +324,7 @@ async function getSQLiteVersionInfo(version, year) {
         throw new Error(`No SQLite tags information available at ${tags}`)
     }
 
-    core.debug(`Processing returned versions information: ${jsonTags}`)
+    core.debug('Processing returned versions information')
 
     /*
      * This inner function is used to correctly sort the returned array of 
@@ -430,7 +430,7 @@ async function getSQLiteVersionInfo(version, year) {
     // convert into json object
     const jsonCommit = JSON.parse(body)
 
-    core.debug(`Extracting date information from json object: ${jsonCommit}`)
+    core.debug('Extracting date information from json object')
 
     // extract the year information
     let date = new Date(jsonCommit["committer"]["date"])
@@ -544,6 +544,8 @@ module.exports.setup_sqlite = async function setup_sqlite(version, year, url_pre
 
         cachePath = await cacheDir(sqliteExtractedFolder, 'sqlite', version)
 
+        core.info(`Extracted SQLite version ${version} into directory ${cachePath}`)
+
         // Find the sub-directory within cachePath since that is what needs to be
         // added to the path.
         await addCachedPath(cachePath);
@@ -590,7 +592,10 @@ async function addCachedPath(cacheRootPath) {
         const name = `${cacheRootPath}${sep}${item}`;
         const stats = await stat(name);
         if (stats.isDirectory()) {
+            // Add directory path to the PATH environment variable
             core.addPath(name);
+            // Set the sqlite-path value of this action
+            core.setOutput('sqlite-path', name)
         }
     });
 }

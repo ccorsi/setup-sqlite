@@ -17,6 +17,8 @@ outputs:
     description: 'A boolean value to indicate if a cache was hit'
   sqlite-version:
     description: 'The installed SQLite version'
+  sqlite-path:
+    description: 'The path of the installed SQLite version'
 runs:
-  using: 'node16' # can this be node18
+  using: 'node18' # can this be node18
   main: 'dist/index.js' # installs the requested sqlite version
