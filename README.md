@@ -61,6 +61,27 @@ While the above versions are currently accessible, not all of the older versions
 
 ## Matrix Testing
 
+Let us look at different use cases that one can use the setup-sqlite action.
+
+This first example will simply install a single version of SQLite.
+
+```yaml
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: SQLite ${{ matrix.sqlite }} sample
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup SQLite
+        uses: actions/setup-sqlite@v2
+        with:
+          sqlite-version: 3.47.2
+          sqlite-year: 2024
+      - run: sqlite3 foo "create table foo (a int, b text)"
+```
+
+The following one will only use the version of the sqlite to install multiple versions of SQLite.
+
 ```yaml
 jobs:
   build:
@@ -72,9 +93,34 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Setup SQLite
-        uses: actions/setup-sqlite@v1
+        uses: actions/setup-sqlite@v2
         with:
           sqlite-version: ${{ matrix.sqlite }}
+      - run: sqlite3 foo "create table foo (a int, b text)"
+```
+
+The following example shows how one can go about installing multiple versions of SQLite using a
+combination of the version and year information.
+
+```yaml
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        sqlite:
+          - version: 3.40.0
+            year: 2022
+          - version: 3.35.0
+            year: 2021
+    name: SQLite ${{ matrix.sqlite }} sample
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup SQLite
+        uses: actions/setup-sqlite@v2
+        with:
+          sqlite-version: ${{ matrix.sqlite.version }}
+          sqlite-year: ${{ matrix.sqlite.year }}
       - run: sqlite3 foo "create table foo (a int, b text)"
 ```
 
