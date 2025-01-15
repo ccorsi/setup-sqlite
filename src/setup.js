@@ -1,7 +1,7 @@
 // ==================================================================================
 // MIT License
 
-// Copyright (c) 2022 Claudio Corsi
+// Copyright (c) 2022-2025 Claudio Corsi
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -192,10 +192,12 @@ async function getSQLiteVersionInfo(version, year) {
     }
 
     // Used to retrieve the latest SQLite version information
-    const tags = 'https://api.github.com/repos/sqlite/sqlite/tags'
+    const tags = 'https://api.github.com/repos/sqlite/sqlite/git/matching-refs/tags/version-'
 
     // Create a client connection
-    const client = new hc.HttpClient('github-sqlite-tags')
+    const client = new hc.HttpClient('github-sqlite-version-tags')
+
+    core.info('Executing tags information request for all version- tags')
 
     let res = await client.get(tags)
 
@@ -219,20 +221,43 @@ async function getSQLiteVersionInfo(version, year) {
         throw new Error(`No SQLite tags information available at ${tags}`)
     }
 
-    // Get the first entry in the list for the verison information
-    let entry = jsonTags.find((entry) => entry["name"].startsWith('version-'))
+    core.debug('Processing returned versions information')
 
-    // Determine if we've found any entries
-    if (entry == undefined) {
-        throw new Error(`No SQLite version information was found for SQLite version: ${version}`)
+    /*
+    * This inner function is used to correctly sort the returned array of
+    * tags such that the latest version information for SQLite will be
+    * the first entry in the array.
+    */
+    function cmp(left, right) {
+        // Get the version information in an array of numbers from the passed json object
+        const left_version = left["ref"].split('-')[1].split('.').map(Number)
+        const right_version = right["ref"].split('-')[1].split('.').map(Number)
+
+        // Determine which of the two versions is newer.
+        if (left_version[0] != right_version[0]) {
+           return left_version[0] > right_version[0] ? -1 : 1
+        } else if (left_version[1] != right_version[1]) {
+           return left_version[1] > right_version[1] ? -1 : 1
+        } else {
+           return left_version[2] > right_version[2] ? -1 : 1
+        }
     }
 
-    // we've found an entry with a valid tag information, extract data
-    // get the version
-    version   = entry["name"].substring("version-".length)
+    // sort the entries in the array of json objects
+    jsonTags.sort(cmp)
+
+    // Get the first entry in the list for the verison information
+    let entry = jsonTags[0]
+
+    // we've found an entry with a valid tag information, get the version
+    version = entry["ref"].substring("refs/tags/version-".length)
+
+    core.debug(`Found version: ${version}`)
 
     // get the commit url to determine year of above version
-    let commitUrl = entry["commit"]["url"]
+    let commitUrl = entry["object"]["url"]
+
+    core.debug(`Getting date information using commit url: ${commitUrl}`)
 
     // retrieve information for the commit url
     res = await client.get(commitUrl)
@@ -250,8 +275,10 @@ async function getSQLiteVersionInfo(version, year) {
     // convert into json object
     const jsonCommit = JSON.parse(body)
 
+    core.debug('Extracting date information from json object')
+
     // extract the year information
-    let date = new Date(jsonCommit["commit"]["committer"]["date"])
+    let date = new Date(jsonCommit["committer"]["date"])
 
     // get associated year for commit
     year = `${date.getFullYear()}`
@@ -378,8 +405,8 @@ module.exports.setup_sqlite = async function setup_sqlite(version, year, url_pre
 
         core.info(`Installed sqlite version: ${version} from ${url}`)
     } catch(err) {
-        core.debug(`Installation of SQLite version: ${version} generated an error`)
-        core.debug(err)
+        core.error(`Installation of SQLite version: ${version} generated an error`)
+        core.error(err.stack)
         // re-throw the caught error
         throw err
     }
