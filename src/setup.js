@@ -223,31 +223,23 @@ async function getSQLiteVersionInfo(version, year) {
 
     core.debug('Processing returned versions information')
 
-    /*
-    * This inner function is used to correctly sort the returned array of
-    * tags such that the latest version information for SQLite will be
-    * the first entry in the array.
-    */
-    function cmp(left, right) {
-        // Get the version information in an array of numbers from the passed json object
-        const left_version = left["ref"].split('-')[1].split('.').map(Number)
-        const right_version = right["ref"].split('-')[1].split('.').map(Number)
-
-        // Determine which of the two versions is newer.
-        if (left_version[0] != right_version[0]) {
-           return left_version[0] > right_version[0] ? -1 : 1
-        } else if (left_version[1] != right_version[1]) {
-           return left_version[1] > right_version[1] ? -1 : 1
-        } else {
-           return left_version[2] > right_version[2] ? -1 : 1
-        }
-    }
-
-    // sort the entries in the array of json objects
-    jsonTags.sort(cmp)
-
     // Get the first entry in the list for the verison information
     let entry = jsonTags[0]
+    let entry_version = entry["ref"].split('-')[1].split('.').map(Number)
+
+    // Iterate through each returned entry and determine which is the latest version
+    jsonTags.forEach((tag) => {
+        const version = tag["ref"].split('-')[1].split('.').map(Number)
+
+        // Determine if the current tag is newer than the currently newest one
+        if (( version[0] > entry_version[0] ) ||
+            ( version[0] == entry_version[0] && version[1] > entry_version[1] ) ||
+            ( version[0] == entry_version[0] && version[1] == entry_version[1] && version[2] > entry_version[2] ) ) {
+            // Replace the current newest tag within this newer tag
+            entry = tag
+            entry_version = version
+        }
+    })
 
     // we've found an entry with a valid tag information, get the version
     version = entry["ref"].substring("refs/tags/version-".length)
