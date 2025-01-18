@@ -89,6 +89,31 @@ function formatVersion(version) {
     return versionString
 }
 
+/**
+ * This function will determine what type of build will be retrieved depending
+ * on the version number.  The different builds started to make builds for x64
+ * instead of x86 from version 3.44.0 onwards.  This function will check the
+ * version and return the string 'x86' for versions before 3.44.0 and 'x64' for
+ * newer versions.
+ *
+ * @param {string} version expected formatted version string
+ * @returns {string} will return either 'x86' or 'x64'
+ */
+function get_build_type(version) {
+    const major = Number(version.substring(0, version.length - 6))
+    const minor = Number(version.substring(version.length - 6, version.length - 4))
+
+    if (major < 2) {
+        return 'x86'
+    } else if (major > 3) {
+        return 'x64'
+    } else if (minor < 44) {
+        return 'x86'
+    } else {
+        return 'x64'
+    }
+}
+
 module.exports.formatVersion = formatVersion
 
 /**
@@ -103,17 +128,20 @@ function create_target_filename(version) {
     // Convert the passed version string into the expected download version string
     version = formatVersion(version)
 
+    // determine if this version is built again x86 or x64.
+    build_type = get_build_type(version)
+
     // Determine which target to download given our operating system
     switch(process.platform) {
         // windows versions
         case 'win32':
-            return `sqlite-tools-win32-x86-${version}.zip`
+            return `sqlite-tools-${build_type == 'x86' ? 'win32' : 'win'}-${build_type}-${version}.zip`
         // linux versions
         case 'linux':
-            return `sqlite-tools-linux-x86-${version}.zip`
+            return `sqlite-tools-linux-${build_type}-${version}.zip`
         // macos versions
         case 'darwin':
-            return `sqlite-tools-osx-x86-${version}.zip`
+            return `sqlite-tools-osx-${build_type}-${version}.zip`
         // unsupported versions
         default:
             throw new Error(`The operating system: ${process.platform} for SQLite is not supported by this setup action`)

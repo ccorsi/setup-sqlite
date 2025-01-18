@@ -14,6 +14,7 @@ const { setup_sqlite, cleanup } = require('../src/setup')
  * This information was retrieved from https://www.sqlite.org/chronology.html.
  */
 const distributions = {
+	2023: [ '3.43.2', '3.44.0'],
 	2022: [ // '3.40.0', '3.39.4', '3.39.3', '3.39.2', '3.39.1', '3.39.0',
 			// '3.38.5', '3.38.4', '3.38.3', '3.38.2', '3.38.1', '3.38.0',
 			'3.37.2' ],
@@ -40,15 +41,18 @@ const tempPath =  path.join(__dirname, 'TEMP')
 process.env['RUNNER_TEMP']       = tempPath
 process.env['RUNNER_TOOL_CACHE'] = cachePath
 
-// Delete the TEMP and CACHE directory before executing the tests
-beforeAll(() => {
+function cleanup_cache_and_temp() {
 	if (existsSync(cachePath)) {
 		rmSync(cachePath, { recursive: true, force: true })
 	}
 	if (existsSync(tempPath)) {
 		rmSync(tempPath, { recursive: true, force: true })
 	}
-})
+}
+
+// Delete the TEMP and CACHE directory before and/or after executing the tests
+beforeAll(cleanup_cache_and_temp)
+afterAll( cleanup_cache_and_temp)
 
 const url_prefix = 'https://www.sqlite.org/'
 
