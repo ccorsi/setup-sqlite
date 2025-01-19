@@ -148,6 +148,114 @@ function create_target_filename(version) {
     }
 }
 
+/*
+ * This method will be used whenever we need to wait a certain amount of time before continuing.
+ * This is the case whenever we've reach the rate limit on the github rest api calls.  This method
+ * will sleep for the passed seconds before continuing.
+ *
+ * @param {Number} the number of seconds that this method will sleep
+ * @return {Promise<void>}  A Promise instance that doesn't return any value
+ */
+function sleep(seconds) {
+   return new Promise(resolve => setTimeout(resolve, seconds * 1000))
+}
+
+/*
+ * This method is used to process a GitHub REST API GET call using the passed client object with the
+ * passed uri.  The getCauseMessage will be called when an error was generated when performing the
+ * get call.  While the getRetryCountMessage will be called when the retry count has been exhausted.
+ * While the getUnknownStatusCodeMessage will be called when the return status code isn't 200 or 403
+ * without the rate limit message header information.
+ *
+ * @param {HttpClient} client instance used to make the get call
+ * @param {string} uri http get command that the client will use
+ * @param {callback} getCauseMessage callback used to get the message to pass to the cause Error
+ * @param {callback} getRetryCountMessage callback used to get the message to pass to the retry count exhaust error
+ * @param {callback} getUnknownStatusCodeMessage callback used to get the message to pass to the unknown status code error
+ *
+ * @returns {HttpResponse} a successful response instance to the HTTP GET call
+ */
+async function executeClientGetCall(client, uri,
+    getCauseMessage = (cause) => {
+        return `The client request: ${uri} generated the error: ${cause.stack}`
+    }, getRetryCountMessage = () => {
+        return `The retry count was exhausted for client request: ${uri}`
+    }, getUnknownStatusCodeMessage = (res) => {
+        return `The client request: ${uri} returned an unknown status code: ${res.message.statusCode} with message: ${res.message.statusMessage}`
+}) {
+    let res, retryCount = 0
+
+    do {
+        try {
+            // Execute the get call using the passed uri
+            res = await client.get(uri)
+            if (res.message.statusCode == 200) {
+                // The get call was sucessful thus return
+                return res
+            }
+        } catch (cause) {
+            // This will generate an exception
+            const message = getCauseMessage(cause)
+            core.error(message)
+            throw new Error(message, { cause })
+        }
+
+        if (retryCount == 3) {
+            // eat the rest of the input information so that no memory leak will be generated
+            res.message.resume()
+
+            // We've exhausted the retry count
+            const message = getRetryCountMessage()
+            core.warning(message)
+            throw new Error(message)
+        } else if (res.message.statusCode === 403 && res.message.headers['retry-after']) {
+            // eat the rest of the input information so that no memory leak will be generated
+            res.message.resume()
+
+            // Get the minimum amount of seconds that one should wait before trying again.
+            const secondsToWait = Number(res.message.headers['retry-after'])
+
+            core.warning(`You have exceeded your rate limit. Retrying in ${secondsToWait} seconds.`);
+
+            // retry the command after the amount of second within the header retry-after attribute
+            await sleep(secondsToWait)
+
+            // increment the retryCount
+            retryCount += 1
+
+        } else if (res.message.statusCode === 403 && res.message.headers['x-ratelimit-remaining'] === '0') {
+            // eat the rest of the input information so that no memory leak will be generated
+            res.message.resume()
+
+             // Get the ratelimit reset date in utc epoch seconds
+            const resetTimeEpochSeconds = res.message.headers['x-ratelimit-reset'];
+
+            // Get the current utc time in epoch seconds
+            const currentTimeEpochSeconds = Math.floor(Date.now() / 1000);
+
+            // Determine the minimum amount of seconds that one should wait before trying again.
+            const secondsToWait = resetTimeEpochSeconds - currentTimeEpochSeconds;
+
+            core.warning(`You have exceeded your rate limit. Retrying in ${secondsToWait} seconds.`);
+
+            // retry the command after the amount of second within the header retry-after attribute
+            await sleep(secondsToWait)
+
+            // increment the retryCount
+            retryCount += 1
+
+        } else {
+            // eat the rest of the input information so that no memory leak will be generated
+            res.message.resume()
+
+            // We've received a status code that we don't know how to process
+            const message = getUnknownStatusCodeMessage(res)
+            core.warning(message)
+            throw new Error(message)
+        }
+    } while (true)
+}
+
 module.exports.create_target_filename = create_target_filename
 
 /**
@@ -167,13 +275,7 @@ async function getSQLiteVersionInfo(version, year) {
         const client = new hc.HttpClient(`github-sqlite-tag-${version}`)
 
         // retrieve a list of tags
-        let res = await client.get(tag)
-
-        // check if the request was successful
-        if (res.message.statusCode != 200) {
-            core.info(`The requested ${tag} failed with status code: ${res.message.statusCode} and status message: ${res.message.statusMessage}`)
-            throw new Error(`Unable to retrieve version information for SQLite version ${version}`)
-        }
+        let res = await executeClientGetCall(client, tag)
 
         // get the returned body
         let body = await res.readBody()
@@ -185,13 +287,7 @@ async function getSQLiteVersionInfo(version, year) {
         let commitUrl = jsonTag["object"]["url"]
 
         // retrieve information for the commit url
-        res = await client.get(commitUrl)
-
-        // check to see that the get was successful
-        if (res.message.statusCode != 200) {
-            core.info(`The commit url: ${commitUrl} request failed with status code: ${res.message.statusCode} and message: ${res.message.statusMessage}`)
-            throw new Error(`Unable to get version information for SQLite version ${version}`)
-        }
+        res = await executeClientGetCall(client, commitUrl)
 
         // extract body
         body = await res.readBody()
@@ -227,16 +323,7 @@ async function getSQLiteVersionInfo(version, year) {
 
     core.info('Executing tags information request for all version- tags')
 
-    let res = await client.get(tags)
-
-    if (res.message.statusCode != 200) {
-        // eat the rest of the input information so that no memory leak will be generated
-        res.message.resume()
-
-        core.info(`Unable to get tags information for SQLite version ${version} with status code: ${res.message.statusCode} and message: ${res.message.statusMessage}`)
-        // Unable to retrieve the tags information from GitHub
-        throw new Error(`Unable to get tags information from GitHub for SQLite version: ${version} with status message: ${res.message.statusMessage}`)
-    }
+    let res = await executeClientGetCall(client, tags)
 
     // Get the returned string information
     let body = await res.readBody()
@@ -280,14 +367,7 @@ async function getSQLiteVersionInfo(version, year) {
     core.debug(`Getting date information using commit url: ${commitUrl}`)
 
     // retrieve information for the commit url
-    res = await client.get(commitUrl)
-
-    // check to see that the get was successful
-    if (res.message.statusCode != 200) {
-        core.info(`Information for commit url: ${commitUrl} was not retrieved`)
-        core.info(`The returned status code: ${res.message.statusCode} and message: ${res.message.statusMessage}`)
-        throw new Error(`Unable to get version information SQLite version ${version}, status code: ${res.message.statusCode}`)
-    }
+    res = await executeClientGetCall(client, commitUrl)
 
     // extract body
     body = await res.readBody()

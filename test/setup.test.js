@@ -6,6 +6,7 @@ const { find } = require('@actions/tool-cache')
 const { existsSync, rmSync } = require('fs')
 const path = require('path')
 const { setup_sqlite, cleanup } = require('../src/setup')
+const hc = require('@actions/http-client')
 
 /**
  * This is a list of all sqlite version that should still be accessible from
@@ -124,3 +125,53 @@ for ( const [year, versions] of Object.entries(distributions) ) {
 		})
 	});
 }
+
+describe('Retry Count Test', () => {
+	let timeout = 5000
+
+	beforeEach(async () => {
+		// create the release url
+		const tag = 'https://api.github.com/repos/sqlite/sqlite/git/ref/tags/version-3.47.2'
+
+		// Create a client connection
+		const client = new hc.HttpClient(`github-sqlite-version-3.47.2-tag`)
+
+		// Loop through a simple GitHub REST API call until it reaches a rate limit
+		while (true) {
+			// retrieve a list of tags
+			let res = await client.get(tag)
+
+            // eat the rest of the input information so that no memory leak will be generated
+            res.message.resume()
+
+			if (res.message.statusCode === 403 && res.message.headers['retry-after']) {
+				// Get the minimum amount of seconds that one should wait before trying again.
+				const secondsToWait = Number(res.message.headers['retry-after'])
+
+				timeout = ( secondsToWait + 5 ) * 1000 // convert seconds into milliseconds
+
+				break
+			} else if (res.message.statusCode === 403 && res.message.headers['x-ratelimit-remaining'] === '0') {
+	             // Get the ratelimit reset date in utc epoch seconds
+				const resetTimeEpochSeconds = res.message.headers['x-ratelimit-reset'];
+
+				// Get the current utc time in epoch seconds
+				const currentTimeEpochSeconds = Math.floor(Date.now() / 1000);
+
+				// Determine the minimum amount of seconds that one should wait before trying again.
+				const secondsToWait = resetTimeEpochSeconds - currentTimeEpochSeconds;
+
+				timeout = ( secondsToWait + 5 ) * 1000 // convert seconds into milliseconds
+
+				break
+			} else if (res.message.statusCode != 200) {
+				throw new Error(`An unknown status code was generated: ${res.message?.statusCode}`)
+			}
+		}
+	}, 60000)
+
+	test('Rate Limit Reached Test', async () => {
+		// execute setup_sqlite intallation and then run the cleanup callbacks
+		await setup_sqlite('3.47.1', '2024', url_prefix).finally(cleanup)
+	})
+})
