@@ -28,6 +28,7 @@ jobs:
   # test setup action works for multiple versions of SQLite using version/year combination
   test-version-year:
     name: Setup Version/Year Test
+    needs: units # wait until the unit tests completed before executing the following tests
 
     strategy:
       matrix:
@@ -59,16 +60,18 @@ jobs:
       with:
         sqlite-version: ${{ matrix.sqlite.version }}
         sqlite-year: ${{ matrix.sqlite.year }}
-    - name: Run executable on windows
-      if: runner.os == 'Windows'
-      run: sqlite3.exe --version
-    - name: Run executable on linux or macos
-      if: runner.os != 'Windows'
-      run: sqlite3 --version
+    - run: sqlite3 --version
+    # - name: Run executable on windows
+    #   if: runner.os == 'Windows'
+    #   run: sqlite3.exe --version
+    # - name: Run executable on linux or macos
+    #   if: runner.os != 'Windows'
+    #   run: sqlite3 --version
 
   # test setup action works for multiple versions of SQLite using version
   test-version:
     name: Setup Version Test
+    needs: test-version-year # wait until the test-version-year tests completed before executing the following tests
 
     strategy:
       matrix:
@@ -94,16 +97,18 @@ jobs:
       uses: ./
       with:
         sqlite-version: ${{ matrix.sqlite }}
-    - name: Run executable on windows
-      if: runner.os == 'Windows'
-      run: sqlite3.exe --version
-    - name: Run executable on linux or macos
-      if: runner.os != 'Windows'
-      run: sqlite3 --version
+    - run: sqlite3 --version
+    # - name: Run executable on windows
+    #   if: runner.os == 'Windows'
+    #   run: sqlite3.exe --version
+    # - name: Run executable on linux or macos
+    #   if: runner.os != 'Windows'
+    #   run: sqlite3 --version
 
   # test setup action works with latest version of SQLite
   test-latest:
     name: Setup Test Latest SQLite Version
+    needs: test-version # wait until the test-version tests completed before executing the following tests
 
     strategy:
       matrix:
@@ -123,9 +128,10 @@ jobs:
       # use local distribution until we release an official version
       #   ccorsi/setup-sqlite@v1
       uses: ./
-    - name: Run executable on windows
-      if: runner.os == 'Windows'
-      run: sqlite3.exe --version
-    - name: Run executable on linux or macos
-      if: runner.os != 'Windows'
-      run: sqlite3 --version
+    - run: sqlite3 --version
+    # - name: Run executable on windows
+    #   if: runner.os == 'Windows'
+    #   run: sqlite3.exe --version
+    # - name: Run executable on linux or macos
+    #   if: runner.os != 'Windows'
+    #   run: sqlite3 --version
