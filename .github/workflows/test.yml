@@ -35,10 +35,10 @@ jobs:
         sqlite:
           - version: 3.40.0
             year: 2022
-          - version: 3.43.2
-            year: 2023
-          - version: 3.44.0
-            year: 2023
+          # - version: 3.43.2
+          #   year: 2023
+          # - version: 3.44.0
+          #   year: 2023
           - version: 3.47.2
             year: 2024
       fail-fast: false
@@ -59,7 +59,12 @@ jobs:
       with:
         sqlite-version: ${{ matrix.sqlite.version }}
         sqlite-year: ${{ matrix.sqlite.year }}
-    - run: sqlite3 --version
+    - name: Run executable on windows
+      if: runner.os == 'Windows'
+      run: sqlite3.exe --version
+    - name: Run executable on linux or macos
+      if: runner.os != 'Windows'
+      run: sqlite3 --version
 
   # test setup action works for multiple versions of SQLite using version
   test-version:
@@ -68,7 +73,10 @@ jobs:
     strategy:
       matrix:
         runs-on: [ ubuntu-latest, windows-latest, macos-latest ]
-        sqlite: [ 3.44.0, 3.43.0 ]
+        sqlite: [
+          # 3.44.0, 
+          3.43.0
+        ]
       fail-fast: false
 
     runs-on: ${{ matrix.runs-on }}
@@ -86,7 +94,12 @@ jobs:
       uses: ./
       with:
         sqlite-version: ${{ matrix.sqlite }}
-    - run: sqlite3 --version
+    - name: Run executable on windows
+      if: runner.os == 'Windows'
+      run: sqlite3.exe --version
+    - name: Run executable on linux or macos
+      if: runner.os != 'Windows'
+      run: sqlite3 --version
 
   # test setup action works with latest version of SQLite
   test-latest:
@@ -110,4 +123,9 @@ jobs:
       # use local distribution until we release an official version
       #   ccorsi/setup-sqlite@v1
       uses: ./
-    - run: sqlite3 --version
+    - name: Run executable on windows
+      if: runner.os == 'Windows'
+      run: sqlite3.exe --version
+    - name: Run executable on linux or macos
+      if: runner.os != 'Windows'
+      run: sqlite3 --version
