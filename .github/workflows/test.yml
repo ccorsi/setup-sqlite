@@ -21,13 +21,76 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - run: npm ci
     - run: npm test
 
-  # test action works running from the graph
-  test:
-    name: Setup Test
+  # test setup action works for multiple versions of SQLite using version/year combination
+  test-version-year:
+    name: Setup Version/Year Test
+
+    strategy:
+      matrix:
+        runs-on: [ ubuntu-latest, windows-latest, macos-latest ]
+        sqlite:
+          - version: 3.40.0
+            year: 2022
+          - version: 3.43.2
+            year: 2023
+          - version: 3.44.0
+            year: 2023
+          - version: 3.47.2
+            year: 2024
+      fail-fast: false
+
+    runs-on: ${{ matrix.runs-on }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 16.x
+        cache: 'npm'
+    - run: npm ci
+    - run: npm run prepare
+    - name: Setup SQLite v${{ matrix.sqlite.version }} Version/Year Test
+      # use local distribution until we release an official version
+      #   ccorsi/setup-sqlite@v1
+      uses: ./
+      with:
+        sqlite-version: ${{ matrix.sqlite.version }}
+        sqlite-year: ${{ matrix.sqlite.year }}
+    - run: sqlite3 --version
+
+  # test setup action works for multiple versions of SQLite using version
+  test-version:
+    name: Setup Version Test
+
+    strategy:
+      matrix:
+        runs-on: [ ubuntu-latest, windows-latest, macos-latest ]
+        sqlite: [ 3.44.0, 3.43.0 ]
+      fail-fast: false
+
+    runs-on: ${{ matrix.runs-on }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 16.x
+        cache: 'npm'
+    - run: npm ci
+    - run: npm run prepare
+    - name: Setup SQLite v${{ matrix.sqlite }} Version Only Test
+      # use local distribution until we release an official version
+      #   ccorsi/setup-sqlite@v1
+      uses: ./
+      with:
+        sqlite-version: ${{ matrix.sqlite }}
+    - run: sqlite3 --version
+
+  # test setup action works with latest version of SQLite
+  test-latest:
+    name: Setup Test Latest SQLite Version
 
     strategy:
       matrix:
@@ -36,18 +99,15 @@ jobs:
 
     runs-on: ${{ matrix.runs-on }}
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
       with:
         node-version: 16.x
         cache: 'npm'
     - run: npm ci
     - run: npm run prepare
-    - name: Setup SQLite
+    - name: Setup Latest SQLite Version Test
       # use local distribution until we release an official version
       #   ccorsi/setup-sqlite@v1
       uses: ./
-      with:
-        sqlite-version: 3.40.0
-        sqlite-year: 2022
     - run: sqlite3 --version

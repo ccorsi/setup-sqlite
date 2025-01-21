@@ -57,50 +57,35 @@ afterAll( cleanup_cache_and_temp)
 
 const url_prefix = 'https://www.sqlite.org/'
 
+async function execute(version, year) {
+   // execute setup_sqlite intallation
+   return setup_sqlite(version, year, url_prefix).finally(
+      // run the cleanup callbacks
+      cleanup
+   )
+}
+
 // Check that the latest release of SQLite will be installed when version
 // and year was not defined
 test('setup without any version or year defined', async () => {
-	const now = Date.now()
-
-	// execute setup_sqlite intallation
-	await setup_sqlite(undefined, undefined, url_prefix)
-
-	// run the cleanup callbacks
-	await cleanup()
+	await execute(undefined, undefined)
 })
 
 test('setup with version number only', async () => {
-	const now = Date.now()
-
-	// execute setup_sqlite intallation
-	await setup_sqlite('3.38.5', undefined, url_prefix)
-
-	// run the cleanup callbacks
-	await cleanup()
+	await execute('3.38.5', undefined)
 })
 
 test('setup with version year only', async () => {
-	const now = Date.now()
-
-	// execute setup_sqlite intallation
-	await setup_sqlite(undefined, '2021', url_prefix)
-
-	// run the cleanup callbacks
-	await cleanup()
+	await execute(undefined, '2021')
 })
 
 // Create a test for each distributed sqlite version
 for ( const [year, versions] of Object.entries(distributions) ) {
 	versions.forEach(version => {
 		test(`setup by installing sqlite version: ${version}`, async () => {
-			const now = Date.now()
-
 			// Execute the setup_sqlite function where none of the distributions
 			// will cause an error from being thrown
-			await setup_sqlite(version, year, url_prefix)
-
-			// call the cleanup method just like the run method will
-			await cleanup()
+			await execute(version, year)
 
 			// Check that the sqlite version has been cached
 			expect(find('sqlite', version)).not.toBe('')
@@ -111,14 +96,9 @@ for ( const [year, versions] of Object.entries(distributions) ) {
 for ( const [year, versions] of Object.entries(distributions) ) {
 	versions.forEach(version => {
 		test(`setup using cached sqlite version: ${version}`, async () => {
-			const now = Date.now()
-
 			// Execute the setup_sqlite function where none of the distributions
 			// will cause an error from being thrown
-			await setup_sqlite(version, year, url_prefix)
-
-			// call the cleanup method just like the run method will
-			await cleanup()
+			await execute(version, year)
 
 			// Check that the sqlite version has been cached
 			expect(find('sqlite', version)).not.toBe('')
@@ -127,9 +107,11 @@ for ( const [year, versions] of Object.entries(distributions) ) {
 }
 
 describe('Retry Count Test', () => {
-	let timeout = 5000
+	let timeout = 60000
 
 	beforeEach(async () => {
+		console.log('Executing the rate limit reached beforeEach')
+
 		// create the release url
 		const tag = 'https://api.github.com/repos/sqlite/sqlite/git/ref/tags/version-3.47.2'
 
@@ -141,7 +123,9 @@ describe('Retry Count Test', () => {
 			// retrieve a list of tags
 			let res = await client.get(tag)
 
-            // eat the rest of the input information so that no memory leak will be generated
+			console.log(`Executed the rate limit reached get command: ${tag} with status code: ${res.message?.statusCode}`)
+
+			// eat the rest of the input information so that no memory leak will be generated
             res.message.resume()
 
 			if (res.message.statusCode === 403 && res.message.headers['retry-after']) {
@@ -149,6 +133,8 @@ describe('Retry Count Test', () => {
 				const secondsToWait = Number(res.message.headers['retry-after'])
 
 				timeout = ( secondsToWait + 5 ) * 1000 // convert seconds into milliseconds
+
+				console.log(`set the rate limit reached timeout to ${timeout}`)
 
 				break
 			} else if (res.message.statusCode === 403 && res.message.headers['x-ratelimit-remaining'] === '0') {
@@ -163,15 +149,25 @@ describe('Retry Count Test', () => {
 
 				timeout = ( secondsToWait + 5 ) * 1000 // convert seconds into milliseconds
 
+				console.log(`set the rate limit reached timeout to ${timeout}`)
+
 				break
 			} else if (res.message.statusCode != 200) {
 				throw new Error(`An unknown status code was generated: ${res.message?.statusCode}`)
 			}
 		}
+
+		// should I determine that the timeout was updated?
+		expect(timeout != 60000)
 	}, 60000)
 
 	test('Rate Limit Reached Test', async () => {
+		const version = '3.47.1'
+
 		// execute setup_sqlite intallation and then run the cleanup callbacks
-		await setup_sqlite('3.47.1', '2024', url_prefix).finally(cleanup)
-	})
+		await execute(version, '2024')
+
+		// Check that the sqlite version has been cached
+		expect(find('sqlite', version)).not.toBe('')
+	}, timeout)
 })

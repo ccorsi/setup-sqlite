@@ -44,9 +44,10 @@ const { sep } = require('path');
 function formatVersion(version) {
     // Determine that the passed version is defined
     if (version == undefined || version.length == 0) {
-        core.info('A valid SQLite version is required')
+        const message = 'A valid SQLite version is required'
+        core.error(message)
         // This is an invalid version string so throw an error
-        throw new Error(`A valid sqlite version is required`)
+        throw new Error(message)
     }
 
     let versions = version.split('.')
