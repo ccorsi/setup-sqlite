@@ -538,7 +538,7 @@ function setOutputs(cached, version) {
 async function addCachedPath(cacheRootPath) {
     core.debug(`Adding directory "${cacheRootPath}" to path`)
     core.addPath(cacheRootPath)
-    core.debug(`Added directory "${cacheRootPath}" to path`)
+    core.info(`Added directory "${cacheRootPath}" to path`)
 }
 
 /**
