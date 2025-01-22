@@ -536,15 +536,9 @@ function setOutputs(cached, version) {
  * @param {string} cacheRootPath the root directory name where the sqlite version was cached
  */
 async function addCachedPath(cacheRootPath) {
-    const items = await readdir(cacheRootPath);
-
-    items.forEach(async (item) => {
-        const name = `${cacheRootPath}${sep}${item}`;
-        const stats = await stat(name);
-        if (stats.isDirectory()) {
-            core.addPath(name);
-        }
-    });
+    core.debug(`Adding directory "${cacheRootPath}" to path`)
+    core.addPath(cacheRootPath)
+    core.debug(`Added directory "${cacheRootPath}" to path`)
 }
 
 /**
@@ -554,9 +548,9 @@ async function addCachedPath(cacheRootPath) {
  * @param {function} fcn The function that will be called
  */
 function add_cleanup(fcn) {
-    core.debug('Adding function:', fcn, 'to cleanup function set')
+    core.debug(`Adding function: ${fcn} to cleanup function set`)
     cleanup_fcns.add(fcn)
-    core.debug('Added function:', fcn, 'to cleanup function set:', cleanup_fcns)
+    core.debug(`Added function: ${fcn} to cleanup function set: ${cleanup_fcns}`)
 }
 
 /**
@@ -584,12 +578,12 @@ function add_cleanup(fcn) {
 async function cleanup() {
     cleanup_fcns.forEach(async (fcn) => {
         try {
-            core.debug('Executing cleanup function:', fcn)
+            core.debug(`Executing cleanup function: ${fcn}`)
             await fcn()
         } catch(err) {
-            core.debug('An error was generated when processing cleanup function:', fcn, 'with error:', err)
+            core.debug(`An error was generated when processing cleanup function: ${fcn} with error: ${err}`)
         } finally {
-            core.debug('Completed executing cleanup function:', fcn)
+            core.debug(`Completed executing cleanup function: ${fcn}`)
         }
     });
     cleanup_fcns.clear()

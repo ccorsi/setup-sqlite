@@ -1,0 +1,46 @@
+name: "Setup SQLite Monthly Tests"
+on:
+  schedule:
+    - cron: '0 2 1,15 * *' # trigger rate limit test every 1 and 15 day of the month at 2am
+
+jobs:
+  # run the monthly unit tests
+  monthly-unit-test:
+    name: Rate Limit Unit Test
+    needs: monthly-test-latest # wait until the monthly-test-latest test completed before executing the following tests
+
+    strategy:
+      matrix:
+        runs-on: [ ubuntu-latest, windows-latest, macos-latest ]
+      fail-fast: false
+
+    runs-on: ${{ matrix.runs-on }}
+
+    steps:
+    - uses: actions/checkout@v4
+    - run: npm ci
+    - run: npm test -- -t=setup.monthly.test.js
+
+  # test setup action works with latest version of SQLite
+  monthly-test-latest:
+    name: Setup Latest SQLite Version Test
+
+    strategy:
+      matrix:
+        runs-on: [ ubuntu-latest, windows-latest, macos-latest ]
+      fail-fast: false
+
+    runs-on: ${{ matrix.runs-on }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 16.x
+        cache: 'npm'
+    - run: npm ci
+    - run: npm run prepare
+    - name: Setup Latest SQLite Version Test
+      # use local distribution until we release an official version
+      #   ccorsi/setup-sqlite@v1
+      uses: ./
+    - run: sqlite3 --version

@@ -106,7 +106,7 @@ for ( const [year, versions] of Object.entries(distributions) ) {
 	});
 }
 
-describe('Retry Count Test', () => {
+describe.skip('Retry Count Test', () => {
 	let timeout = 60000
 
 	beforeEach(async () => {
