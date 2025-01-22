@@ -531,14 +531,36 @@ function setOutputs(cached, version) {
 
 /**
  * This method will include the directory name that exists within the passed cached
- * root directory to the path so that it can be used.
+ * root directory to the path so that it can be used.  If none were found then it
+ * add the passed root directory.
+ *
+ * This is being dealt this way since earlier versions of the SQLite bundles executables
+ * were located within a subdirectory while newer version of the bundles the executables
+ * are located within the passed root directory.
  *
  * @param {string} cacheRootPath the root directory name where the sqlite version was cached
  */
 async function addCachedPath(cacheRootPath) {
-    core.debug(`Adding directory "${cacheRootPath}" to path`)
-    core.addPath(cacheRootPath)
-    core.info(`Added directory "${cacheRootPath}" to path`)
+    let addedPath = false
+
+    const items = await readdir(cacheRootPath);
+
+    items.forEach(async (item) => {
+        const name = `${cacheRootPath}${sep}${item}`;
+        const stats = await stat(name);
+        if (stats.isDirectory()) {
+            core.debug(`Adding directory "${name}" to path`)
+            core.addPath(name)
+            core.info(`Added directory "${name}" to path`)
+            addedPath = true
+        }
+    });
+
+    if ( addedPath ==  false) {
+        core.debug(`Adding directory "${cacheRootPath}" to path`)
+        core.addPath(cacheRootPath)
+        core.info(`Added directory "${cacheRootPath}" to path`)
+    }
 }
 
 /**
