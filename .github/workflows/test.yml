@@ -65,7 +65,7 @@ jobs:
   # test setup action works for multiple versions of SQLite using version
   test-version:
     name: Setup Version Test
-    needs: test-version-year # wait until the test-version-year tests completed before executing the following tests
+    needs: units # wait until the unit tests completed before executing the following tests
 
     strategy:
       matrix:
@@ -93,7 +93,7 @@ jobs:
   # test setup action works with latest version of SQLite
   test-latest:
     name: Setup Test Latest SQLite Version
-    needs: test-version # wait until the test-version tests completed before executing the following tests
+    needs: units # wait until the unit tests completed before executing the following tests
 
     strategy:
       matrix:
