@@ -6,6 +6,7 @@ const { find } = require('@actions/tool-cache')
 const { existsSync, rmSync } = require('fs')
 const path = require('path')
 const { setup_sqlite, cleanup } = require('../src/setup')
+const hc = require('@actions/http-client')
 
 /**
  * This is a list of all sqlite version that should still be accessible from
@@ -14,6 +15,7 @@ const { setup_sqlite, cleanup } = require('../src/setup')
  * This information was retrieved from https://www.sqlite.org/chronology.html.
  */
 const distributions = {
+	2023: [ '3.43.2', '3.44.0'],
 	2022: [ // '3.40.0', '3.39.4', '3.39.3', '3.39.2', '3.39.1', '3.39.0',
 			// '3.38.5', '3.38.4', '3.38.3', '3.38.2', '3.38.1', '3.38.0',
 			'3.37.2' ],
@@ -30,8 +32,8 @@ const distributions = {
 			/*'3.16.1',*/ '3.16.0' ]
 }
 
-// Set test limit to 60 seconds
-jest.setTimeout(60000)
+// Set test limit to 60 minutes
+jest.setTimeout(3600000)
 
 const cachePath = path.join(__dirname, 'CACHE')
 const tempPath =  path.join(__dirname, 'TEMP')
@@ -40,62 +42,50 @@ const tempPath =  path.join(__dirname, 'TEMP')
 process.env['RUNNER_TEMP']       = tempPath
 process.env['RUNNER_TOOL_CACHE'] = cachePath
 
-// Delete the TEMP and CACHE directory before executing the tests
-beforeAll(() => {
+function cleanup_cache_and_temp() {
 	if (existsSync(cachePath)) {
 		rmSync(cachePath, { recursive: true, force: true })
 	}
 	if (existsSync(tempPath)) {
 		rmSync(tempPath, { recursive: true, force: true })
 	}
-})
+}
+
+// Delete the TEMP and CACHE directory before and/or after executing the tests
+beforeAll(cleanup_cache_and_temp)
+afterAll( cleanup_cache_and_temp)
 
 const url_prefix = 'https://www.sqlite.org/'
+
+async function execute(version, year) {
+   // execute setup_sqlite intallation
+   return setup_sqlite(version, year, url_prefix).finally(
+      // run the cleanup callbacks
+      cleanup
+   )
+}
 
 // Check that the latest release of SQLite will be installed when version
 // and year was not defined
 test('setup without any version or year defined', async () => {
-	const now = Date.now()
-
-	// execute setup_sqlite intallation
-	await setup_sqlite(undefined, undefined, url_prefix)
-
-	// run the cleanup callbacks
-	await cleanup()
+	await execute(undefined, undefined)
 })
 
 test('setup with version number only', async () => {
-	const now = Date.now()
-
-	// execute setup_sqlite intallation
-	await setup_sqlite('3.38.5', undefined, url_prefix)
-
-	// run the cleanup callbacks
-	await cleanup()
+	await execute('3.38.5', undefined)
 })
 
 test('setup with version year only', async () => {
-	const now = Date.now()
-
-	// execute setup_sqlite intallation
-	await setup_sqlite(undefined, '2021', url_prefix)
-
-	// run the cleanup callbacks
-	await cleanup()
+	await execute(undefined, '2021')
 })
 
 // Create a test for each distributed sqlite version
 for ( const [year, versions] of Object.entries(distributions) ) {
 	versions.forEach(version => {
 		test(`setup by installing sqlite version: ${version}`, async () => {
-			const now = Date.now()
-
 			// Execute the setup_sqlite function where none of the distributions
 			// will cause an error from being thrown
-			await setup_sqlite(version, year, url_prefix)
-
-			// call the cleanup method just like the run method will
-			await cleanup()
+			await execute(version, year)
 
 			// Check that the sqlite version has been cached
 			expect(find('sqlite', version)).not.toBe('')
@@ -106,14 +96,9 @@ for ( const [year, versions] of Object.entries(distributions) ) {
 for ( const [year, versions] of Object.entries(distributions) ) {
 	versions.forEach(version => {
 		test(`setup using cached sqlite version: ${version}`, async () => {
-			const now = Date.now()
-
 			// Execute the setup_sqlite function where none of the distributions
 			// will cause an error from being thrown
-			await setup_sqlite(version, year, url_prefix)
-
-			// call the cleanup method just like the run method will
-			await cleanup()
+			await execute(version, year)
 
 			// Check that the sqlite version has been cached
 			expect(find('sqlite', version)).not.toBe('')

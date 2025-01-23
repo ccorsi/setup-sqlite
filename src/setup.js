@@ -1,7 +1,7 @@
 // ==================================================================================
 // MIT License
 
-// Copyright (c) 2022 Claudio Corsi
+// Copyright (c) 2022-2025 Claudio Corsi
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -44,9 +44,10 @@ const { sep } = require('path');
 function formatVersion(version) {
     // Determine that the passed version is defined
     if (version == undefined || version.length == 0) {
-        core.info('A valid SQLite version is required')
+        const message = 'A valid SQLite version is required'
+        core.error(message)
         // This is an invalid version string so throw an error
-        throw new Error(`A valid sqlite version is required`)
+        throw new Error(message)
     }
 
     let versions = version.split('.')
@@ -89,6 +90,31 @@ function formatVersion(version) {
     return versionString
 }
 
+/**
+ * This function will determine what type of build will be retrieved depending
+ * on the version number.  The different builds started to make builds for x64
+ * instead of x86 from version 3.44.0 onwards.  This function will check the
+ * version and return the string 'x86' for versions before 3.44.0 and 'x64' for
+ * newer versions.
+ *
+ * @param {string} version expected formatted version string
+ * @returns {string} will return either 'x86' or 'x64'
+ */
+function get_build_type(version) {
+    const major = Number(version.substring(0, version.length - 6))
+    const minor = Number(version.substring(version.length - 6, version.length - 4))
+
+    if (major < 2) {
+        return 'x86'
+    } else if (major > 3) {
+        return 'x64'
+    } else if (minor < 44) {
+        return 'x86'
+    } else {
+        return 'x64'
+    }
+}
+
 module.exports.formatVersion = formatVersion
 
 /**
@@ -103,21 +129,132 @@ function create_target_filename(version) {
     // Convert the passed version string into the expected download version string
     version = formatVersion(version)
 
+    // determine if this version is built again x86 or x64.
+    build_type = get_build_type(version)
+
     // Determine which target to download given our operating system
     switch(process.platform) {
         // windows versions
         case 'win32':
-            return `sqlite-tools-win32-x86-${version}.zip`
+            return `sqlite-tools-${build_type == 'x86' ? 'win32' : 'win'}-${build_type}-${version}.zip`
         // linux versions
         case 'linux':
-            return `sqlite-tools-linux-x86-${version}.zip`
+            return `sqlite-tools-linux-${build_type}-${version}.zip`
         // macos versions
         case 'darwin':
-            return `sqlite-tools-osx-x86-${version}.zip`
+            return `sqlite-tools-osx-${build_type}-${version}.zip`
         // unsupported versions
         default:
             throw new Error(`The operating system: ${process.platform} for SQLite is not supported by this setup action`)
     }
+}
+
+/*
+ * This method will be used whenever we need to wait a certain amount of time before continuing.
+ * This is the case whenever we've reach the rate limit on the github rest api calls.  This method
+ * will sleep for the passed seconds before continuing.
+ *
+ * @param {Number} the number of seconds that this method will sleep
+ * @return {Promise<void>}  A Promise instance that doesn't return any value
+ */
+function sleep(seconds) {
+   return new Promise(resolve => setTimeout(resolve, seconds * 1000))
+}
+
+/*
+ * This method is used to process a GitHub REST API GET call using the passed client object with the
+ * passed uri.  The getCauseMessage will be called when an error was generated when performing the
+ * get call.  While the getRetryCountMessage will be called when the retry count has been exhausted.
+ * While the getUnknownStatusCodeMessage will be called when the return status code isn't 200 or 403
+ * without the rate limit message header information.
+ *
+ * @param {HttpClient} client instance used to make the get call
+ * @param {string} uri http get command that the client will use
+ * @param {callback} getCauseMessage callback used to get the message to pass to the cause Error
+ * @param {callback} getRetryCountMessage callback used to get the message to pass to the retry count exhaust error
+ * @param {callback} getUnknownStatusCodeMessage callback used to get the message to pass to the unknown status code error
+ *
+ * @returns {HttpResponse} a successful response instance to the HTTP GET call
+ */
+async function executeClientGetCall(client, uri,
+    getCauseMessage = (cause) => {
+        return `The client request: ${uri} generated the error: ${cause.stack}`
+    }, getRetryCountMessage = () => {
+        return `The retry count was exhausted for client request: ${uri}`
+    }, getUnknownStatusCodeMessage = (res) => {
+        return `The client request: ${uri} returned an unknown status code: ${res.message.statusCode} with message: ${res.message.statusMessage}`
+}) {
+    let res, retryCount = 0
+
+    do {
+        try {
+            // Execute the get call using the passed uri
+            res = await client.get(uri)
+            if (res.message.statusCode == 200) {
+                // The get call was sucessful thus return
+                return res
+            }
+        } catch (cause) {
+            // This will generate an exception
+            const message = getCauseMessage(cause)
+            core.error(message)
+            throw new Error(message, { cause })
+        }
+
+        if (retryCount == 3) {
+            // eat the rest of the input information so that no memory leak will be generated
+            res.message.resume()
+
+            // We've exhausted the retry count
+            const message = getRetryCountMessage()
+            core.warning(message)
+            throw new Error(message)
+        } else if (res.message.statusCode === 403 && res.message.headers['retry-after']) {
+            // eat the rest of the input information so that no memory leak will be generated
+            res.message.resume()
+
+            // Get the minimum amount of seconds that one should wait before trying again.
+            const secondsToWait = Number(res.message.headers['retry-after'])
+
+            core.warning(`You have exceeded your rate limit. Retrying in ${secondsToWait} seconds.`);
+
+            // retry the command after the amount of second within the header retry-after attribute
+            await sleep(secondsToWait)
+
+            // increment the retryCount
+            retryCount += 1
+
+        } else if (res.message.statusCode === 403 && res.message.headers['x-ratelimit-remaining'] === '0') {
+            // eat the rest of the input information so that no memory leak will be generated
+            res.message.resume()
+
+             // Get the ratelimit reset date in utc epoch seconds
+            const resetTimeEpochSeconds = res.message.headers['x-ratelimit-reset'];
+
+            // Get the current utc time in epoch seconds
+            const currentTimeEpochSeconds = Math.floor(Date.now() / 1000);
+
+            // Determine the minimum amount of seconds that one should wait before trying again.
+            const secondsToWait = resetTimeEpochSeconds - currentTimeEpochSeconds;
+
+            core.warning(`You have exceeded your rate limit. Retrying in ${secondsToWait} seconds.`);
+
+            // retry the command after the amount of second within the header retry-after attribute
+            await sleep(secondsToWait)
+
+            // increment the retryCount
+            retryCount += 1
+
+        } else {
+            // eat the rest of the input information so that no memory leak will be generated
+            res.message.resume()
+
+            // We've received a status code that we don't know how to process
+            const message = getUnknownStatusCodeMessage(res)
+            core.warning(message)
+            throw new Error(message)
+        }
+    } while (true)
 }
 
 module.exports.create_target_filename = create_target_filename
@@ -139,13 +276,7 @@ async function getSQLiteVersionInfo(version, year) {
         const client = new hc.HttpClient(`github-sqlite-tag-${version}`)
 
         // retrieve a list of tags
-        let res = await client.get(tag)
-
-        // check if the request was successful
-        if (res.message.statusCode != 200) {
-            core.info(`The requested ${tag} failed with status code: ${res.message.statusCode} and status message: ${res.message.statusMessage}`)
-            throw new Error(`Unable to retrieve version information for SQLite version ${version}`)
-        }
+        let res = await executeClientGetCall(client, tag)
 
         // get the returned body
         let body = await res.readBody()
@@ -157,13 +288,7 @@ async function getSQLiteVersionInfo(version, year) {
         let commitUrl = jsonTag["object"]["url"]
 
         // retrieve information for the commit url
-        res = await client.get(commitUrl)
-
-        // check to see that the get was successful
-        if (res.message.statusCode != 200) {
-            core.info(`The commit url: ${commitUrl} request failed with status code: ${res.message.statusCode} and message: ${res.message.statusMessage}`)
-            throw new Error(`Unable to get version information for SQLite version ${version}`)
-        }
+        res = await executeClientGetCall(client, commitUrl)
 
         // extract body
         body = await res.readBody()
@@ -192,21 +317,14 @@ async function getSQLiteVersionInfo(version, year) {
     }
 
     // Used to retrieve the latest SQLite version information
-    const tags = 'https://api.github.com/repos/sqlite/sqlite/tags'
+    const tags = 'https://api.github.com/repos/sqlite/sqlite/git/matching-refs/tags/version-'
 
     // Create a client connection
-    const client = new hc.HttpClient('github-sqlite-tags')
+    const client = new hc.HttpClient('github-sqlite-version-tags')
 
-    let res = await client.get(tags)
+    core.info('Executing tags information request for all version- tags')
 
-    if (res.message.statusCode != 200) {
-        // eat the rest of the input information so that no memory leak will be generated
-        res.message.resume()
-
-        core.info(`Unable to get tags information for SQLite version ${version} with status code: ${res.message.statusCode} and message: ${res.message.statusMessage}`)
-        // Unable to retrieve the tags information from GitHub
-        throw new Error(`Unable to get tags information from GitHub for SQLite version: ${version} with status message: ${res.message.statusMessage}`)
-    }
+    let res = await executeClientGetCall(client, tags)
 
     // Get the returned string information
     let body = await res.readBody()
@@ -219,30 +337,38 @@ async function getSQLiteVersionInfo(version, year) {
         throw new Error(`No SQLite tags information available at ${tags}`)
     }
 
+    core.debug('Processing returned versions information')
+
     // Get the first entry in the list for the verison information
-    let entry = jsonTags.find((entry) => entry["name"].startsWith('version-'))
+    let entry = jsonTags[0]
+    let entry_version = entry["ref"].split('-')[1].split('.').map(Number)
 
-    // Determine if we've found any entries
-    if (entry == undefined) {
-        throw new Error(`No SQLite version information was found for SQLite version: ${version}`)
-    }
+    // Iterate through each returned entry and determine which is the latest version
+    jsonTags.forEach((tag) => {
+        const version = tag["ref"].split('-')[1].split('.').map(Number)
 
-    // we've found an entry with a valid tag information, extract data
-    // get the version
-    version   = entry["name"].substring("version-".length)
+        // Determine if the current tag is newer than the currently newest one
+        if (( version[0] > entry_version[0] ) ||
+            ( version[0] == entry_version[0] && version[1] > entry_version[1] ) ||
+            ( version[0] == entry_version[0] && version[1] == entry_version[1] && version[2] > entry_version[2] ) ) {
+            // Replace the current newest tag within this newer tag
+            entry = tag
+            entry_version = version
+        }
+    })
+
+    // we've found an entry with a valid tag information, get the version
+    version = entry["ref"].substring("refs/tags/version-".length)
+
+    core.debug(`Found version: ${version}`)
 
     // get the commit url to determine year of above version
-    let commitUrl = entry["commit"]["url"]
+    let commitUrl = entry["object"]["url"]
+
+    core.debug(`Getting date information using commit url: ${commitUrl}`)
 
     // retrieve information for the commit url
-    res = await client.get(commitUrl)
-
-    // check to see that the get was successful
-    if (res.message.statusCode != 200) {
-        core.info(`Information for commit url: ${commitUrl} was not retrieved`)
-        core.info(`The returned status code: ${res.message.statusCode} and message: ${res.message.statusMessage}`)
-        throw new Error(`Unable to get version information SQLite version ${version}, status code: ${res.message.statusCode}`)
-    }
+    res = await executeClientGetCall(client, commitUrl)
 
     // extract body
     body = await res.readBody()
@@ -250,8 +376,10 @@ async function getSQLiteVersionInfo(version, year) {
     // convert into json object
     const jsonCommit = JSON.parse(body)
 
+    core.debug('Extracting date information from json object')
+
     // extract the year information
-    let date = new Date(jsonCommit["commit"]["committer"]["date"])
+    let date = new Date(jsonCommit["committer"]["date"])
 
     // get associated year for commit
     year = `${date.getFullYear()}`
@@ -378,8 +506,8 @@ module.exports.setup_sqlite = async function setup_sqlite(version, year, url_pre
 
         core.info(`Installed sqlite version: ${version} from ${url}`)
     } catch(err) {
-        core.debug(`Installation of SQLite version: ${version} generated an error`)
-        core.debug(err)
+        core.error(`Installation of SQLite version: ${version} generated an error`)
+        core.error(err.stack)
         // re-throw the caught error
         throw err
     }
@@ -403,20 +531,36 @@ function setOutputs(cached, version) {
 
 /**
  * This method will include the directory name that exists within the passed cached
- * root directory to the path so that it can be used.
+ * root directory to the path so that it can be used.  If none were found then it
+ * add the passed root directory.
+ *
+ * This is being dealt this way since earlier versions of the SQLite bundles executables
+ * were located within a subdirectory while newer version of the bundles the executables
+ * are located within the passed root directory.
  *
  * @param {string} cacheRootPath the root directory name where the sqlite version was cached
  */
 async function addCachedPath(cacheRootPath) {
+    let addedPath = false
+
     const items = await readdir(cacheRootPath);
 
     items.forEach(async (item) => {
         const name = `${cacheRootPath}${sep}${item}`;
         const stats = await stat(name);
         if (stats.isDirectory()) {
-            core.addPath(name);
+            core.debug(`Adding directory "${name}" to path`)
+            core.addPath(name)
+            core.info(`Added directory "${name}" to path`)
+            addedPath = true
         }
     });
+
+    if ( addedPath ==  false) {
+        core.debug(`Adding directory "${cacheRootPath}" to path`)
+        core.addPath(cacheRootPath)
+        core.info(`Added directory "${cacheRootPath}" to path`)
+    }
 }
 
 /**
@@ -426,9 +570,9 @@ async function addCachedPath(cacheRootPath) {
  * @param {function} fcn The function that will be called
  */
 function add_cleanup(fcn) {
-    core.debug('Adding function:', fcn, 'to cleanup function set')
+    core.debug(`Adding function: ${fcn} to cleanup function set`)
     cleanup_fcns.add(fcn)
-    core.debug('Added function:', fcn, 'to cleanup function set:', cleanup_fcns)
+    core.debug(`Added function: ${fcn} to cleanup function set: ${cleanup_fcns}`)
 }
 
 /**
@@ -456,12 +600,12 @@ function add_cleanup(fcn) {
 async function cleanup() {
     cleanup_fcns.forEach(async (fcn) => {
         try {
-            core.debug('Executing cleanup function:', fcn)
+            core.debug(`Executing cleanup function: ${fcn}`)
             await fcn()
         } catch(err) {
-            core.debug('An error was generated when processing cleanup function:', fcn, 'with error:', err)
+            core.debug(`An error was generated when processing cleanup function: ${fcn} with error: ${err}`)
         } finally {
-            core.debug('Completed executing cleanup function:', fcn)
+            core.debug(`Completed executing cleanup function: ${fcn}`)
         }
     });
     cleanup_fcns.clear()
