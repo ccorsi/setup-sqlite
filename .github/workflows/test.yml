@@ -88,6 +88,7 @@ jobs:
       uses: ./
       with:
         sqlite-version: ${{ matrix.sqlite }}
+        sqlite-retry-count: 10
     - run: sqlite3 --version
 
   # test setup action works with latest version of SQLite
@@ -113,4 +114,6 @@ jobs:
       # use local distribution until we release an official version
       #   ccorsi/setup-sqlite@v1
       uses: ./
+      with:
+        sqlite-retry-count: 10
     - run: sqlite3 --version

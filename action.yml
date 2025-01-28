@@ -12,6 +12,10 @@ inputs:
     description: 'The url prefix to the SQLite download site without the year and version information, for example, https://www.sqlite.org/'
     required: false
     default: 'https://www.sqlite.org/'
+  sqlite-retry-count:
+    description: 'The retry count for github rest api calls, default 3.  Relevant when not defining version/year input combinations.'
+    required: false
+    default: '3'
 outputs:
   cache-hit:
     description: 'A boolean value to indicate if a cache was hit'

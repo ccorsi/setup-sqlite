@@ -20,6 +20,7 @@ Here is a table of the different inputs that can be used with this action
 | sqlite-version | version of the SQLite to install | true |  |
 | sqlite-year | release year of the SQLite to install | true |  |
 | sqlite-url-path | the SQLite download site | true | https://www.sqlite.org/ |
+| sqlite-retry-count | the retry count for github api calls | true | 3 |
 
 Note that the input combination of the SQLite version and year would greatly shorten the installation of SQLite.  Thou,
 the requirement of the year is not required for a given version but an invalid version/year combination will cause the
@@ -27,6 +28,16 @@ action to fail.  Note that the missing year will cause the installation process 
 While not defining the version and year will take the longest time to install.  The recommended inputs would be to
 correctly define the version and year of the SQLite installation.  This information can be found on the
 [SQLite releases](https://www.sqlite.org/chronology.html) page.
+
+The addition of the sqlite-retry-count optional option is only useful in the case that you don't define your
+version/year combination.  The retry count is used to determine how many tries the setup sqlite action will make
+github api calls before exiting the setup sqlite action.  The github api call is only used to be able to get the year
+associated to the sqlite version that is being requested.  The version/year combination is necessary to be able to
+correctly format the download url for the requested version of sqlite.  The advantage of setting the retry count becomes
+useful whenever you are going to be performing many concurrent setup sqlite calls.  This would then cause your currently
+executing workflow to incur rate limit response from using the github api too frequently.  Retrying those calls becomes
+useful but you might need to increase the retry count to something larger to insure that all setup sqlite calls will be
+successful.
 
 Here is a table of the different outputs that will be produced by this action
 
@@ -138,7 +149,7 @@ jobs:
       - run: sqlite3 foo "create table foo (a int, b text)"
 ```
 
-Finally, the following example shows how one can go about installing the latest version of SQLite
+The following example shows how one can go about installing the latest version of SQLite
 by just not defining the sqlite-version and sqlite-year.
 
 ```yaml
@@ -155,6 +166,31 @@ jobs:
 
 The last example can be useful for projects that need to insure that the latest version of SQLite
 works as expected for their project.
+
+While the above examples don't include the sqlite-version and sqlite-year input to work.  There is
+always a chance that the setup sqlite action will require retries because the setup will be performing
+github api calls.  These calls can incur a rate limit response which requires retries.  These response
+will contain information about how long one needs to wait before retrying the github api call.  While
+the default retry count is set to 3.  One can always increase this value using the sqlite-retry-count
+input variable like the following example.
+
+```yaml
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Latest SQLite Version sample
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Latest SQLite Version
+        uses: actions/setup-sqlite@v1
+        with:
+          sqlite-retry-count: 10
+      - run: sqlite3 foo "create table foo (a int, b text)"
+```
+
+The above example shows you how you can increase the retry count of the setup sqlite action to 10.
+While this is a nice little feature.  I do not expect this feature to be something that many will tend
+to use.
 
 ## License
 
