@@ -57,11 +57,20 @@ function expected(value) {
     }
 }
 
-describe.each([ '1', '0', '-11', 'a', '3', '' ])('.retry-count(%s)', (value) => {
+let input = [
+    [ '1',   '3.48.0', '2025' ],
+    [ '0',   '3.47.2', '2024' ],
+    [ '-11', '3.47.1', '2024' ],
+    [ 'a',   '3.47.0', '2024' ],
+    [ '3',   '3.46.1', '2024' ],
+    [ '',    '3.46.0', '2024' ]
+]
+
+describe.each(input)('.retry-count(%s)', (retry_count, version, year) => {
 
     beforeEach(() => {
         // Set the sqlite-retry-count input to value
-        set_input('sqlite-retry-count', value)
+        set_input('sqlite-retry-count', retry_count)
     })
 
     afterEach(() => {
@@ -69,15 +78,15 @@ describe.each([ '1', '0', '-11', 'a', '3', '' ])('.retry-count(%s)', (value) => 
         set_input('sqlite-retry-count', '')
     })
 
-    test(`.retry-count(${value})`, async () => {
+    test(`.retry-count(${retry_count})`, async () => {
         // Insure that the sqlite-retry-count input was correctly set
-        expect(core.getInput('sqlite-retry-count')).toBe(value)
+        expect(core.getInput('sqlite-retry-count')).toBe(retry_count)
 
         // Execute the setup_sqlite action
-        await execute('3.48.0', '2025', url_prefix)
+        await execute(version, year, url_prefix)
 
         // Check that the max_retry_count was correctly set
-        expect(max_retry_count).toBe(expected(value))
+        expect(max_retry_count).toBe(expected(retry_count))
     })
 
 })
