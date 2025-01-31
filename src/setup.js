@@ -44,8 +44,8 @@ function set_max_retry_count() {
     let input = core.getInput('sqlite-retry-count')
     let value = default_retry_count
 
-    if (Number.isInteger(input)) {
-        let v = Number(input)
+    let v = Number(input)
+    if (Number.isInteger(v)) {
         if (v > 0) {
             core.info(`Setting retry count to ${v}`)
             value = v
