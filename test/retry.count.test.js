@@ -11,8 +11,8 @@ const path = require('path')
 // Set test limit to 60 seconds
 jest.setTimeout(60000)
 
-const cachePath = path.join(__dirname, 'CACHE')
-const tempPath =  path.join(__dirname, 'TEMP')
+const cachePath = path.join(__dirname, 'RETRYCOUNT', 'CACHE')
+const tempPath =  path.join(__dirname, 'RETRYCOUNT', 'TEMP')
 
 // Set temp and tool directories before importing (used to set global state)
 process.env['RUNNER_TEMP']       = tempPath
