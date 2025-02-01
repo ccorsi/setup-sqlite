@@ -28,6 +28,41 @@ const { extractZip, cacheDir, find, downloadTool } = require('@actions/tool-cach
 const { rm, readdir, stat } = require('fs/promises');
 const { sep } = require('path');
 
+// Default retry count used when using the GitHub REST APi.
+const default_retry_count = 3
+
+// for testing purposes export this value to check that the expected result will be set
+// whenever we incorrectly set the retry count
+module.exports.default_retry_count = default_retry_count
+
+/*
+ * This method will return the retry count that will be used whenever we are using the
+ * GitHub REST API.  It will determine if the sqlite-retry-count input was an integer
+ * and greater than one.  If it is, then it will use that value are the retry count.
+ */
+function set_max_retry_count() {
+    let input = core.getInput('sqlite-retry-count')
+    let value = default_retry_count
+
+    let v = Number(input)
+    if (Number.isInteger(v)) {
+        if (v > 0) {
+            core.info(`Setting retry count to ${v}`)
+            value = v
+        } else {
+            core.warning(`An invalid sqlite-retry-count was passed: ${input}, the value has to be greater than 0, defaulting to ${default_retry_count}`)
+        }
+    } else if (input?.length > 0) {
+        core.warning(`An invalid sqlite-retry-count was passed: ${input}, defaulting to ${default_retry_count}`)
+    }
+
+    return value
+}
+
+const max_retry_count = set_max_retry_count()
+
+module.exports.max_retry_count = max_retry_count
+
 /**
  * This method is passed a version in string format that will then be converted into
  * the expect format to be able to append to the download url to retreive the sqlite
@@ -201,7 +236,7 @@ async function executeClientGetCall(client, uri,
             throw new Error(message, { cause })
         }
 
-        if (retryCount == 3) {
+        if (retryCount == max_retry_count) {
             // eat the rest of the input information so that no memory leak will be generated
             res.message.resume()
 

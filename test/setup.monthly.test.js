@@ -11,8 +11,8 @@ const hc = require('@actions/http-client')
 // Set test limit to 60 minutes
 jest.setTimeout(3600000)
 
-const cachePath = path.join(__dirname, 'CACHE')
-const tempPath =  path.join(__dirname, 'TEMP')
+const cachePath = path.join(__dirname, 'MONTHLY', 'CACHE')
+const tempPath =  path.join(__dirname, 'MONTHLY', 'TEMP')
 
 // Set temp and tool directories before importing (used to set global state)
 process.env['RUNNER_TEMP']       = tempPath
