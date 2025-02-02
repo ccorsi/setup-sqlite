@@ -8,6 +8,14 @@ const { setup_runner_temp_and_cache, set_input } = require('./utils')
 
 const url_prefix = 'https://www.sqlite.org/'
 
+function expected(value, default_value) {
+    value = Number(value)
+    if (Number.isInteger(value) && value > 0) {
+        return value
+    }
+    return default_value
+}
+
 module.exports.execute_retry_count_test = (retry_count, version, year, directory) => {
     const cleanup_cache_and_temp = setup_runner_temp_and_cache( directory )
 
@@ -39,18 +47,8 @@ module.exports.execute_retry_count_test = (retry_count, version, year, directory
                 cleanup
             )
 
-            function expected(value) {
-                value = Number(value)
-                if (Number.isInteger(value) && value > 0) {
-                    return value
-                }
-                return default_retry_count
-            }
-
-            const expected_retry_count = expected(retry_count, default_retry_count)
-
             // Check that the max_retry_count was correctly set
-            expect(max_retry_count).toBe(expected_retry_count)
+            expect(max_retry_count).toBe(expected(retry_count, default_retry_count))
         })
 
     })
