@@ -19,7 +19,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - run: npm ci
-    - run: npm test -- -t=setup.monthly.test.js
+    - run: npm run test-monthly
 
   # test setup action works with latest version of SQLite
   monthly-test-latest:

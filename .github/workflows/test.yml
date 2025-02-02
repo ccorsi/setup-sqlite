@@ -23,7 +23,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - run: npm ci
-    - run: npm test -- --testPathIgnorePatterns setup.monthly.test.js
+    - run: npm test
 
   # test setup action works for multiple versions of SQLite using version/year combination
   test-version-year:

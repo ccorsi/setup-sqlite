@@ -7,7 +7,8 @@
     "lint": "eslint src",
     "prepare": "ncc build src/main.js -o dist",
     "all": "npm run lint && npm run prepare && npm test",
-    "test": "jest"
+    "test-monthly": "jest -t=setup.monthly.test.js",
+    "test": "jest --testPathIgnorePatterns=monthly"
   },
   "repository": {
     "type": "git",

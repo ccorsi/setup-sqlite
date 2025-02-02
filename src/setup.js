@@ -50,10 +50,10 @@ function set_max_retry_count() {
             core.info(`Setting retry count to ${v}`)
             value = v
         } else {
-            core.warning(`An invalid sqlite-retry-count was passed: ${input}, the value has to be greater than 0, defaulting to ${default_retry_count}`)
+            core.warning(`An invalid sqlite-retry-count was passed, the value has to be greater than 0, defaulting to ${default_retry_count}`)
         }
     } else if (input?.length > 0) {
-        core.warning(`An invalid sqlite-retry-count was passed: ${input}, defaulting to ${default_retry_count}`)
+        core.warning(`An invalid sqlite-retry-count was passed, defaulting to ${default_retry_count}`)
     }
 
     return value
