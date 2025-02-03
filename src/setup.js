@@ -26,7 +26,8 @@ const core = require('@actions/core');
 const hc = require('@actions/http-client');
 const { extractZip, cacheDir, find, downloadTool } = require('@actions/tool-cache');
 const { rm, readdir, stat } = require('fs/promises');
-const { sep } = require('path');
+const { sep, join } = require('path');
+const { randomUUID } = require('crypto')
 
 // Default retry count used when using the GitHub REST APi.
 const default_retry_count = 3
@@ -503,11 +504,11 @@ module.exports.setup_sqlite = async function setup_sqlite(version, year, url_pre
     try {
         core.debug(`Installing SQLite version: ${version} from ${url}`)
 
-        if (process.platform == 'win32') {
-            targetName = await downloadTool(url, targetName)
-        } else {
-            targetName = await downloadTool(url)
-        }
+        // Create the destination file using the RUNNER_TEMP directory.
+        targetName = join(process.env['RUNNER_TEMP'], randomUUID(), targetName)
+
+        // Download the targeted SQLite version
+        targetName = await downloadTool(url, targetName)
 
         // Add a cleanup callback that will deleted the target file
         add_cleanup(async () => {
