@@ -3,10 +3,8 @@
  * accessicible from the major sqlite web site.
  */
 const { find } = require('@actions/tool-cache')
-const { existsSync, rmSync } = require('fs')
-const path = require('path')
 const { setup_sqlite, cleanup } = require('../src/setup')
-const hc = require('@actions/http-client')
+const { setup_runner_temp_and_cache } = require('./utils')
 
 /**
  * This is a list of all sqlite version that should still be accessible from
@@ -35,21 +33,7 @@ const distributions = {
 // Set test limit to 60 minutes
 jest.setTimeout(3600000)
 
-const cachePath = path.join(__dirname, 'SETUP', 'CACHE')
-const tempPath =  path.join(__dirname, 'SETUP', 'TEMP')
-
-// Set temp and tool directories before importing (used to set global state)
-process.env['RUNNER_TEMP']       = tempPath
-process.env['RUNNER_TOOL_CACHE'] = cachePath
-
-function cleanup_cache_and_temp() {
-	if (existsSync(cachePath)) {
-		rmSync(cachePath, { recursive: true, force: true })
-	}
-	if (existsSync(tempPath)) {
-		rmSync(tempPath, { recursive: true, force: true })
-	}
-}
+const cleanup_cache_and_temp = setup_runner_temp_and_cache('SETUP')
 
 // Delete the TEMP and CACHE directory before and/or after executing the tests
 beforeAll(cleanup_cache_and_temp)
