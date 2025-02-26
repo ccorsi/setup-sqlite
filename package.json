@@ -1,13 +1,13 @@
 {
   "name": "@ccorsi/setup-sqlite",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Setup Action for the sqlite distribution",
   "main": "dist/main.js",
   "scripts": {
     "lint": "eslint src",
     "prepare": "ncc build src/main.js -o dist",
     "all": "npm run lint && npm run prepare && npm test",
-    "test-monthly": "jest -t=setup.monthly.test.js",
+    "test-bimonthly": "jest --testNamePattern=Monthly",
     "test": "jest --testPathIgnorePatterns=monthly"
   },
   "repository": {

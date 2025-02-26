@@ -1,7 +1,7 @@
 # setup-sqlite
 
 [![build-test](https://github.com/ccorsi/setup-sqlite/actions/workflows/test.yml/badge.svg)](https://github.com/ccorsi/setup-sqlite/actions/workflows/test.yml)
-[![monthly-test](https://github.com/ccorsi/setup-sqlite/actions/workflows/testmonthly.yml/badge.svg)](https://github.com/ccorsi/setup-sqlite/actions/workflows/testmonthly.yml)
+[![bimonthly-test](https://github.com/ccorsi/setup-sqlite/actions/workflows/testbimonthly.yml/badge.svg)](https://github.com/ccorsi/setup-sqlite/actions/workflows/testbimonthly.yml)
 <!-- [![versions](https://github.com/ccorsi/setup-sqlite/actions/workflows/versions.yml/badge.svg)](https://github.com/ccorsi/setup-sqlite/actions/workflows/versions.yml)
 [![proxy](https://github.com/ccorsi/setup-sqlite/actions/workflows/proxy.yml/badge.svg)](https://github.com/ccorsi/setup-sqlite/actions/workflows/proxy.yml) -->
 
