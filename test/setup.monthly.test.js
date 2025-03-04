@@ -39,8 +39,6 @@ describe('Monthly Tests', () => {
         let timeout = 60000
 
         beforeEach(async () => {
-            console.log('Executing the rate limit reached beforeEach')
-
             // create the release url
             const tag = 'https://api.github.com/repos/sqlite/sqlite/git/ref/tags/version-3.47.2'
 
@@ -52,8 +50,6 @@ describe('Monthly Tests', () => {
                 // retrieve a list of tags
                 let res = await client.get(tag)
 
-                console.log(`Executed the rate limit reached get command: ${tag} with status code: ${res.message?.statusCode}`)
-
                 // eat the rest of the input information so that no memory leak will be generated
                 res.message.resume()
 
@@ -62,8 +58,6 @@ describe('Monthly Tests', () => {
                     const secondsToWait = Number(res.message.headers['retry-after'])
 
                     timeout = ( secondsToWait + 5 ) * 1000 // convert seconds into milliseconds
-
-                    console.log(`set the rate limit reached timeout to ${timeout}`)
 
                     break
                 } else if (res.message.statusCode === 403 && res.message.headers['x-ratelimit-remaining'] === '0') {
@@ -77,8 +71,6 @@ describe('Monthly Tests', () => {
                     const secondsToWait = resetTimeEpochSeconds - currentTimeEpochSeconds;
 
                     timeout = ( secondsToWait + 5 ) * 1000 // convert seconds into milliseconds
-
-                    console.log(`set the rate limit reached timeout to ${timeout}`)
 
                     break
                 } else if (res.message.statusCode != 200) {
