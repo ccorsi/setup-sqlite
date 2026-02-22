@@ -51,7 +51,7 @@ Here is a table of the different outputs that will be produced by this action
 ```yaml
 steps:
 - uses: actions/checkout@v4
-- uses: actions/setup-sqlite@v1
+- uses: ccorsi/setup-sqlite@v1
   with:
     sqlite-version: 3.40.0
     sqlite-year: 2022
@@ -98,7 +98,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup SQLite v3.47.2
-        uses: actions/setup-sqlite@v1
+        uses: ccorsi/setup-sqlite@v1
         with:
           sqlite-version: 3.47.2
           sqlite-year: 2024
@@ -118,7 +118,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup SQLite v${{ matrix.sqlite }}
-        uses: actions/setup-sqlite@v1
+        uses: ccorsi/setup-sqlite@v1
         with:
           sqlite-version: ${{ matrix.sqlite }}
       - run: sqlite3 foo "create table foo (a int, b text)"
@@ -142,7 +142,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup SQLite v${{ matrix.sqlite.version }}
-        uses: actions/setup-sqlite@v1
+        uses: ccorsi/setup-sqlite@v1
         with:
           sqlite-version: ${{ matrix.sqlite.version }}
           sqlite-year: ${{ matrix.sqlite.year }}
@@ -160,7 +160,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup Latest SQLite Version
-        uses: actions/setup-sqlite@v1
+        uses: ccorsi/setup-sqlite@v1
       - run: sqlite3 foo "create table foo (a int, b text)"
 ```
 
@@ -182,7 +182,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup Latest SQLite Version
-        uses: actions/setup-sqlite@v1
+        uses: ccorsi/setup-sqlite@v1
         with:
           sqlite-retry-count: 10
       - run: sqlite3 foo "create table foo (a int, b text)"
