@@ -1,7 +1,7 @@
 // ==================================================================================
 // MIT License
 
-// Copyright (c) 2022-2025 Claudio Corsi
+// Copyright (c) 2022-2026 Claudio Corsi
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -53,7 +53,7 @@ function set_max_retry_count() {
         } else {
             core.warning(`An invalid sqlite-retry-count was passed, the value has to be greater than 0, defaulting to ${default_retry_count}`)
         }
-    } else if (input?.length > 0) {
+    } else if (input.length || 0 > 0) {
         core.warning(`An invalid sqlite-retry-count was passed, defaulting to ${default_retry_count}`)
     }
 
@@ -166,7 +166,7 @@ function create_target_filename(version) {
     version = formatVersion(version)
 
     // determine if this version is built again x86 or x64.
-    build_type = get_build_type(version)
+    const build_type = get_build_type(version)
 
     // Determine which target to download given our operating system
     switch(process.platform) {
@@ -220,7 +220,7 @@ async function executeClientGetCall(client, uri,
     }, getUnknownStatusCodeMessage = (res) => {
         return `The client request: ${uri} returned an unknown status code: ${res.message.statusCode} with message: ${res.message.statusMessage}`
 }) {
-    let res, retryCount = 0
+    let res, retryCount = 0, message = ''
 
     do {
         try {
@@ -244,7 +244,6 @@ async function executeClientGetCall(client, uri,
             // We've exhausted the retry count
             const message = getRetryCountMessage()
             core.warning(message)
-            throw new Error(message)
         } else if (res.message.statusCode === 403 && res.message.headers['retry-after']) {
             // eat the rest of the input information so that no memory leak will be generated
             res.message.resume()
@@ -288,9 +287,10 @@ async function executeClientGetCall(client, uri,
             // We've received a status code that we don't know how to process
             const message = getUnknownStatusCodeMessage(res)
             core.warning(message)
-            throw new Error(message)
         }
-    } while (true)
+    } while (retryCount < max_retry_count)
+
+    throw new Error(message)
 }
 
 module.exports.create_target_filename = create_target_filename
