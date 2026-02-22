@@ -1,6 +1,6 @@
 {
   "name": "@ccorsi/setup-sqlite",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Setup Action for the sqlite distribution",
   "main": "dist/main.js",
   "scripts": {
@@ -28,14 +28,17 @@
   },
   "homepage": "https://github.com/ccorsi/setup-sqlite#readme",
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.3",
+    "@eslint/js": "^10.0.1",
     "@vercel/ncc": "^0.38.4",
-    "eslint": "^9.39.1",
+    "eslint": "^10.0.1",
+    "globals": "^17.3.0",
     "jest": "^30.2.0"
   },
   "dependencies": {
-    "@actions/core": "^1.11.1",
+    "@actions/core": "^2.0.0",
     "@actions/http-client": "^3.0.0",
-    "@actions/tool-cache": "^2.0.2",
+    "@actions/tool-cache": "^3.0.0",
     "uuid": "^13.0.0"
   }
 }
