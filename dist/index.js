@@ -3498,7 +3498,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports._findMatch = _findMatch;
 exports._getOsVersion = _getOsVersion;
 exports._readLinuxVersionFile = _readLinuxVersionFile;
-const semver = __importStar(__nccwpck_require__(6193));
+const semver = __importStar(__nccwpck_require__(9318));
 const core_1 = __nccwpck_require__(7484);
 // needs to be require for core node modules to be mocked
 /* eslint @typescript-eslint/no-require-imports: 0 */
@@ -3766,7 +3766,7 @@ const mm = __importStar(__nccwpck_require__(8036));
 const os = __importStar(__nccwpck_require__(857));
 const path = __importStar(__nccwpck_require__(6928));
 const httpm = __importStar(__nccwpck_require__(4844));
-const semver = __importStar(__nccwpck_require__(6193));
+const semver = __importStar(__nccwpck_require__(9318));
 const stream = __importStar(__nccwpck_require__(2203));
 const util = __importStar(__nccwpck_require__(9023));
 const assert_1 = __nccwpck_require__(2613);
@@ -4379,7 +4379,7 @@ function _unique(values) {
 
 /***/ }),
 
-/***/ 6193:
+/***/ 9318:
 /***/ ((module, exports) => {
 
 exports = module.exports = SemVer
